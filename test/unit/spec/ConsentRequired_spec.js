@@ -1,144 +1,145 @@
 /* eslint max-params: [2, 13], max-len: [2, 160] */
-define([
-  'okta',
-  '@okta/okta-auth-js/jquery',
-  'util/Util',
-  'helpers/mocks/Util',
-  'helpers/dom/ConsentRequiredForm',
-  'helpers/util/Expect',
-  'LoginRouter',
-  'sandbox',
-  'helpers/xhr/CONSENT_REQUIRED',
-  'helpers/xhr/SUCCESS'
-],
-function (Okta, OktaAuth, LoginUtil, Util, ConsentRequiredForm, Expect, Router,
-          $sandbox, resConsentRequired, resSuccess) {
+import OktaAuth from '@okta/okta-auth-js/jquery';
+import Router from 'LoginRouter';
+import ConsentRequiredForm from 'helpers/dom/ConsentRequiredForm';
+import Util from 'helpers/mocks/Util';
+import Expect from 'helpers/util/Expect';
+import resConsentRequired from 'helpers/xhr/CONSENT_REQUIRED';
+import resSuccess from 'helpers/xhr/SUCCESS';
+import $sandbox from 'sandbox';
+import LoginUtil from 'util/Util';
+let { _, $ } = Okta;
+const itp = Expect.itp;
+const tick = Expect.tick;
 
-  var { _, $ } = Okta;
-  var itp = Expect.itp;
-  var tick = Expect.tick;
+function deepClone(res) {
+  return JSON.parse(JSON.stringify(res));
+}
 
-  function deepClone(res) {
-    return JSON.parse(JSON.stringify(res));
-  }
+function setup(settings, res) {
+  settings || (settings = {});
+  const successSpy = jasmine.createSpy('successSpy');
+  const setNextResponse = Util.mockAjax();
+  const baseUrl = 'https://example.okta.com';
+  const logoUrl = 'https://logo.com';
+  const authClient = new OktaAuth({ url: baseUrl, transformErrorXHR: LoginUtil.transformErrorXHR });
+  const router = new Router(
+    _.extend(
+      {
+        el: $sandbox,
+        baseUrl: baseUrl,
+        features: { consent: true },
+        logo: logoUrl,
+        authClient: authClient,
+        globalSuccessFn: successSpy,
+      },
+      settings
+    )
+  );
 
-  function setup(settings, res) {
-    settings || (settings = {});
-    var successSpy = jasmine.createSpy('successSpy');
-    var setNextResponse = Util.mockAjax();
-    var baseUrl = 'https://example.okta.com';
-    var logoUrl = 'https://logo.com';
-    var authClient = new OktaAuth({url: baseUrl, transformErrorXHR: LoginUtil.transformErrorXHR});
-    var router = new Router(_.extend({
-      el: $sandbox,
-      baseUrl: baseUrl,
-      features: { consent: true },
-      logo: logoUrl,
-      authClient: authClient,
-      globalSuccessFn: successSpy
-    }, settings));
-    Util.registerRouter(router);
-    Util.mockRouterNavigate(router);
-    Util.mockJqueryCss();
-    setNextResponse(res || resConsentRequired);
-    router.refreshAuthState('dummy-token');
-    settings = {
-      router: router,
-      successSpy: successSpy,
-      form: new ConsentRequiredForm($sandbox),
-      ac: authClient,
-      setNextResponse: setNextResponse
-    };
-    return Expect.waitForConsentRequired(settings);
-  }
+  Util.registerRouter(router);
+  Util.mockRouterNavigate(router);
+  Util.mockJqueryCss();
+  setNextResponse(res || resConsentRequired);
+  router.refreshAuthState('dummy-token');
+  settings = {
+    router: router,
+    successSpy: successSpy,
+    form: new ConsentRequiredForm($sandbox),
+    ac: authClient,
+    setNextResponse: setNextResponse,
+  };
+  return Expect.waitForConsentRequired(settings);
+}
 
-  function setupClientLogo() {
-    var resConsentRequiredClientLogo = deepClone(resConsentRequired);
-    var customLogo = {
-      href: 'https://example.com/custom-logo.png',
-      type: 'image/png'
-    };
-    resConsentRequiredClientLogo.response._embedded.target._links.logo = customLogo;
-    return setup(undefined, resConsentRequiredClientLogo);
-  }
+function setupClientLogo() {
+  const resConsentRequiredClientLogo = deepClone(resConsentRequired);
+  const customLogo = {
+    href: 'https://example.com/custom-logo.png',
+    type: 'image/png',
+  };
 
-  Expect.describe('ConsentRequired', function () {
+  resConsentRequiredClientLogo.response._embedded.target._links.logo = customLogo;
+  return setup(undefined, resConsentRequiredClientLogo);
+}
 
-    Expect.describe('ConsentBeacon', function () {
-      itp('has the correct user logo', function () {
-        return setup().then(function (test) {
-          expect(test.form.userLogo()).toHaveClass('person-16-gray');
-        });
-      });
-      itp('has the default logo if client logo is not provided', function () {
-        return setup().then(function (test) {
-          expect(test.form.clientLogo()).toHaveAttr('src', 'https://example.okta.com/img/logos/default.png');
-        });
-      });
-      itp('has the correct client logo', function () {
-        return setupClientLogo().then(function (test) {
-          expect(test.form.clientLogo()).toHaveAttr('src', 'https://example.com/custom-logo.png');
-        });
+Expect.describe('ConsentRequired', function() {
+  Expect.describe('ConsentBeacon', function() {
+    itp('has the correct user logo', function() {
+      return setup().then(function(test) {
+        expect(test.form.userLogo()).toHaveClass('person-16-gray');
       });
     });
-
-    Expect.describe('ScopeList', function () {
-      itp('has the correct number of scopes', function () {
-        return setup().then(function (test) {
-          expect(test.form.scopeList().children()).toHaveLength(2);
-        });
-      });
-      itp('scope item show displayName instead of name if the first is available', function () {
-        return setup().then(function (test) {
-          expect(test.form.scopeList().children()[0]).toContainText('Ability to read protected data');
-          expect(test.form.scopeList().children()[0]).not.toContainText('api:read');
-        });
-      });
-      itp('scope item show name if displayName is not available', function () {
-        return setup().then(function (test) {
-          expect(test.form.scopeList().children()[1]).toContainText('api:write');
-        });
-      });
-      itp('scope item has a tooltip if description is available', function () {
-        return setup().then(function (test) {
-          expect(test.form.scopeList().children()[0]).toContainElement('span.scope-item-tooltip');
-        });
-      });
-      itp('scope item does not have a tooltip if description is not available', function () {
-        return setup().then(function (test) {
-          expect(test.form.scopeList().children()[1]).not.toContainElement('span.scope-item-tooltip');
-        });
+    itp('has the default logo if client logo is not provided', function() {
+      return setup().then(function(test) {
+        expect(test.form.clientLogo()).toHaveAttr('src', 'https://example.okta.com/img/logos/default.png');
       });
     });
+    itp('has the correct client logo', function() {
+      return setupClientLogo().then(function(test) {
+        expect(test.form.clientLogo()).toHaveAttr('src', 'https://example.com/custom-logo.png');
+      });
+    });
+  });
 
-    Expect.describe('ConsentForm', function () {
-      itp('has the correct app name in the title', function () {
-        return setup().then(function (test) {
-          expect(test.form.consentTitle().text()).toContain('Janky App');
-        });
+  Expect.describe('ScopeList', function() {
+    itp('has the correct number of scopes', function() {
+      return setup().then(function(test) {
+        expect(test.form.scopeList().children()).toHaveLength(2);
       });
-      itp('has the correct consent name in the title', function () {
-        return setup().then(function (test) {
-          expect(test.form.consentTitle().text()).toContain('Add-Min O.');
-        });
+    });
+    itp('scope item show displayName instead of name if the first is available', function() {
+      return setup().then(function(test) {
+        expect(test.form.scopeList().children()[0]).toContainText('Ability to read protected data');
+        expect(test.form.scopeList().children()[0]).not.toContainText('api:read');
       });
-      itp('has the correct term of services link', function () {
-        return setup().then(function (test) {
-          expect(test.form.termsOfService()).toHaveAttr('href', 'https://example.com/tos.html');
-        });
+    });
+    itp('scope item show name if displayName is not available', function() {
+      return setup().then(function(test) {
+        expect(test.form.scopeList().children()[1]).toContainText('api:write');
       });
-      itp('has the correct privacy policy link', function () {
-        return setup().then(function (test) {
-          expect(test.form.privacyPolicy()).toHaveAttr('href', 'https://example.com/policy.html');
-        });
+    });
+    itp('scope item has a tooltip if description is available', function() {
+      return setup().then(function(test) {
+        expect(test.form.scopeList().children()[0]).toContainElement('span.scope-item-tooltip');
       });
-      itp('has the consent button', function () {
-        return setup().then(function (test) {
-          expect(test.form.consentButton()).toExist();
-        });
+    });
+    itp('scope item does not have a tooltip if description is not available', function() {
+      return setup().then(function(test) {
+        expect(test.form.scopeList().children()[1]).not.toContainElement('span.scope-item-tooltip');
       });
-      itp('consent button click makes the correct consent post', function () {
-        return setup().then(function (test) {
+    });
+  });
+
+  Expect.describe('ConsentForm', function() {
+    itp('has the correct app name in the title', function() {
+      return setup().then(function(test) {
+        expect(test.form.consentTitle().text()).toContain('Janky App');
+      });
+    });
+    itp('has the correct consent name in the title', function() {
+      return setup().then(function(test) {
+        expect(test.form.consentTitle().text()).toContain('Add-Min O.');
+      });
+    });
+    itp('has the correct term of services link', function() {
+      return setup().then(function(test) {
+        expect(test.form.termsOfService()).toHaveAttr('href', 'https://example.com/tos.html');
+      });
+    });
+    itp('has the correct privacy policy link', function() {
+      return setup().then(function(test) {
+        expect(test.form.privacyPolicy()).toHaveAttr('href', 'https://example.com/policy.html');
+      });
+    });
+    itp('has the consent button', function() {
+      return setup().then(function(test) {
+        expect(test.form.consentButton()).toExist();
+      });
+    });
+    itp('consent button click makes the correct consent post', function() {
+      return setup()
+        .then(function(test) {
           $.ajax.calls.reset();
           test.setNextResponse(resSuccess);
           test.form.consentButton().click();
@@ -151,38 +152,38 @@ function (Okta, OktaAuth, LoginUtil, Util, ConsentRequiredForm, Expect, Router,
             data: {
               consent: {
                 expiresAt: '2017-07-20T00:06:25.000Z',
-                scopes: [ 'api:read', 'api:write' ]
+                scopes: ['api:read', 'api:write'],
               },
-              stateToken: 'testStateToken'
-            }
+              stateToken: 'testStateToken',
+            },
           });
         });
+    });
+    itp('has the cancel button', function() {
+      return setup().then(function(test) {
+        expect(test.form.cancelButton()).toExist();
       });
-      itp('has the cancel button', function () {
-        return setup().then(function (test) {
-          expect(test.form.cancelButton()).toExist();
-        });
-      });
-      itp('cancel button click cancels the current stateToken and calls the cancel function', function () {
-        var cancel = jasmine.createSpy('cancel');
-        return setup({ consent: { cancel } }).then(function (test) {
+    });
+    itp('cancel button click cancels the current stateToken and calls the cancel function', function() {
+      const cancel = jasmine.createSpy('cancel');
+
+      return setup({ consent: { cancel } })
+        .then(function(test) {
           $.ajax.calls.reset();
           test.setNextResponse(resSuccess);
           test.form.cancelButton().click();
           return tick();
         })
-        .then(function () {
+        .then(function() {
           expect($.ajax.calls.count()).toBe(1);
           Expect.isJsonPost($.ajax.calls.argsFor(0), {
             url: 'https://example.okta.com/api/v1/authn/cancel',
             data: {
-              stateToken: 'testStateToken'
-            }
+              stateToken: 'testStateToken',
+            },
           });
           expect(cancel).toHaveBeenCalled();
         });
-      });
     });
-
   });
 });

@@ -1,248 +1,251 @@
-define(['okta', './Form'], function (Okta, Form) {
+import Form from './Form';
+let { _, $ } = Okta;
+const USERNAME_FIELD = 'username';
+const PASSWORD_FIELD = 'password';
+const REMEMBER_ME_FIELD = 'remember';
+const REMEMBER_ME_LABEL = 'label[data-se-for-name="remember"]';
+const SECURITY_BEACON = 'security-beacon';
+const CLASS_SELECTOR = '.primary-auth';
+const SIGN_IN_BUTTON = '.button.button-primary';
+export default Form.extend({
+  isPrimaryAuth: function() {
+    return this.$(CLASS_SELECTOR).length === 1;
+  },
 
-  var { _, $ } = Okta;
-  var USERNAME_FIELD = 'username';
-  var PASSWORD_FIELD = 'password';
-  var REMEMBER_ME_FIELD = 'remember';
-  var REMEMBER_ME_LABEL = 'label[data-se-for-name="remember"]';
-  var SECURITY_BEACON = 'security-beacon';
-  var CLASS_SELECTOR = '.primary-auth';
-  var SIGN_IN_BUTTON = '.button.button-primary';
+  primaryAuthForm: function() {
+    return this.$(CLASS_SELECTOR + ' form');
+  },
 
-  return Form.extend({
+  usernameField: function() {
+    return this.input(USERNAME_FIELD);
+  },
 
-    isPrimaryAuth: function () {
-      return this.$(CLASS_SELECTOR).length === 1;
-    },
+  usernameErrorField: function() {
+    return this.error(USERNAME_FIELD);
+  },
 
-    primaryAuthForm: function () {
-      return this.$(CLASS_SELECTOR + ' form');
-    },
+  getUsernameFieldAutocomplete: function() {
+    return this.autocomplete(USERNAME_FIELD);
+  },
 
-    usernameField: function () {
-      return this.input(USERNAME_FIELD);
-    },
+  passwordField: function() {
+    return this.input(PASSWORD_FIELD);
+  },
 
-    usernameErrorField: function () {
-      return this.error(USERNAME_FIELD);
-    },
+  passwordErrorField: function() {
+    return this.error(PASSWORD_FIELD);
+  },
 
-    getUsernameFieldAutocomplete: function () {
-      return this.autocomplete(USERNAME_FIELD);
-    },
+  getPasswordFieldAutocomplete: function() {
+    return this.autocomplete(PASSWORD_FIELD);
+  },
 
-    passwordField: function () {
-      return this.input(PASSWORD_FIELD);
-    },
+  signInButton: function() {
+    return this.$(SIGN_IN_BUTTON);
+  },
 
-    passwordErrorField: function () {
-      return this.error(PASSWORD_FIELD);
-    },
+  rememberMeCheckbox: function() {
+    return this.checkbox(REMEMBER_ME_FIELD);
+  },
 
-    getPasswordFieldAutocomplete: function () {
-      return this.autocomplete(PASSWORD_FIELD);
-    },
+  rememberMeLabelText: function() {
+    return this.checkboxLabelText(REMEMBER_ME_FIELD);
+  },
 
-    signInButton: function () {
-      return this.$(SIGN_IN_BUTTON);
-    },
+  rememberMeCheckboxStatus: function() {
+    const isChecked = this.$(REMEMBER_ME_LABEL).hasClass('checked');
 
-    rememberMeCheckbox: function () {
-      return this.checkbox(REMEMBER_ME_FIELD);
-    },
+    return isChecked ? 'checked' : 'unchecked';
+  },
 
-    rememberMeLabelText: function () {
-      return this.checkboxLabelText(REMEMBER_ME_FIELD);
-    },
+  usernameTooltipText: function() {
+    return this.tooltipText(USERNAME_FIELD);
+  },
 
-    rememberMeCheckboxStatus: function () {
-      var isChecked = this.$(REMEMBER_ME_LABEL).hasClass('checked');
-      return isChecked ? 'checked' : 'unchecked';
-    },
+  passwordTooltipText: function() {
+    return this.tooltipText(PASSWORD_FIELD);
+  },
 
-    usernameTooltipText: function () {
-      return this.tooltipText(USERNAME_FIELD);
-    },
+  securityImageTooltipText: function() {
+    return this.tooltipText(SECURITY_BEACON);
+  },
 
-    passwordTooltipText: function () {
-      return this.tooltipText(PASSWORD_FIELD);
-    },
+  isSecurityImageTooltipDestroyed: function() {
+    const api = this.tooltipApi(SECURITY_BEACON);
 
-    securityImageTooltipText: function () {
-      return this.tooltipText(SECURITY_BEACON);
-    },
+    return api ? api.destroyed : true;
+  },
 
-    isSecurityImageTooltipDestroyed: function () {
-      var api = this.tooltipApi(SECURITY_BEACON);
-      return api ? api.destroyed : true;
-    },
+  securityBeacon: function() {
+    return this.el(SECURITY_BEACON);
+  },
 
-    securityBeacon: function () {
-      return this.el(SECURITY_BEACON);
-    },
+  securityBeaconContainer: function() {
+    return this.$('.beacon-container');
+  },
 
-    securityBeaconContainer: function () {
-      return this.$('.beacon-container');
-    },
+  editingUsername: function(val) {
+    const field = this.usernameField();
 
-    editingUsername: function (val) {
-      var field = this.usernameField();
-      field.val(val);
-      field.trigger('change');
-      return field;
-    },
+    field.val(val);
+    field.trigger('change');
+    return field;
+  },
 
-    setUsername: function (val) {
-      this.editingUsername(val).trigger('focusout');
-    },
+  setUsername: function(val) {
+    this.editingUsername(val).trigger('focusout');
+  },
 
-    setPassword: function (val) {
-      var field = this.passwordField();
-      field.val(val);
-      field.trigger('change');
-    },
+  setPassword: function(val) {
+    const field = this.passwordField();
 
-    setRememberMe: function (val) {
-      var field = this.rememberMeCheckbox();
-      field.prop('checked', val);
-      field.trigger('change');
-    },
+    field.val(val);
+    field.trigger('change');
+  },
 
-    helpFooter: function () {
-      return this.$('.js-help');
-    },
+  setRememberMe: function(val) {
+    const field = this.rememberMeCheckbox();
 
-    helpFooterLabel: function () {
-      return this.helpFooter().text();
-    },
+    field.prop('checked', val);
+    field.trigger('change');
+  },
 
-    helpLink: function () {
-      return this.$('.js-help-link');
-    },
+  helpFooter: function() {
+    return this.$('.js-help');
+  },
 
-    helpLinkLabel: function () {
-      return this.helpLink().text();
-    },
+  helpFooterLabel: function() {
+    return this.helpFooter().text();
+  },
 
-    helpLinkHref: function () {
-      return this.helpLink().attr('href');
-    },
+  helpLink: function() {
+    return this.$('.js-help-link');
+  },
 
-    forgotPasswordLink: function () {
-      return this.$('.js-forgot-password');
-    },
+  helpLinkLabel: function() {
+    return this.helpLink().text();
+  },
 
-    forgotPasswordLabel: function () {
-      return this.forgotPasswordLink().text();
-    },
+  helpLinkHref: function() {
+    return this.helpLink().attr('href');
+  },
 
-    forgotPasswordLinkVisible: function () {
-      return this.forgotPasswordLink().is(':visible');
-    },
+  forgotPasswordLink: function() {
+    return this.$('.js-forgot-password');
+  },
 
-    unlockLink: function () {
-      return this.$('.js-unlock');
-    },
+  forgotPasswordLabel: function() {
+    return this.forgotPasswordLink().text();
+  },
 
-    unlockLabel: function () {
-      return this.unlockLink().text();
-    },
+  forgotPasswordLinkVisible: function() {
+    return this.forgotPasswordLink().is(':visible');
+  },
 
-    unlockLinkVisible: function () {
-      return this.unlockLink().is(':visible');
-    },
+  unlockLink: function() {
+    return this.$('.js-unlock');
+  },
 
-    customLinks: function () {
-      return _.map(this.$('a.js-custom'), function (el) {
-        var $el = $(el);
-        var link = {
-          text: $el.text(),
-          href: $el.attr('href')
-        };
-        if($el.attr('target')) {
-          link.target = $el.attr('target');
-        }
-        return link;
-      });
-    },
+  unlockLabel: function() {
+    return this.unlockLink().text();
+  },
 
-    primaryAuthContainer: function () {
-      return this.$('.primary-auth-container');
-    },
+  unlockLinkVisible: function() {
+    return this.unlockLink().is(':visible');
+  },
 
-    hasSocialAuthDivider: function () {
-      return this.$('.auth-divider').length === 1;
-    },
+  customLinks: function() {
+    return _.map(this.$('a.js-custom'), function(el) {
+      const $el = $(el);
+      const link = {
+        text: $el.text(),
+        href: $el.attr('href'),
+      };
 
-    socialAuthButton: function (idp) {
-      return this.el('social-auth-' + idp + '-button');
-    },
+      if ($el.attr('target')) {
+        link.target = $el.attr('target');
+      }
+      return link;
+    });
+  },
 
-    facebookButton: function () {
-      return this.socialAuthButton('facebook');
-    },
+  primaryAuthContainer: function() {
+    return this.$('.primary-auth-container');
+  },
 
-    googleButton: function () {
-      return this.socialAuthButton('google');
-    },
+  hasSocialAuthDivider: function() {
+    return this.$('.auth-divider').length === 1;
+  },
 
-    linkedInButton: function () {
-      return this.socialAuthButton('linkedin');
-    },
+  socialAuthButton: function(idp) {
+    return this.el('social-auth-' + idp + '-button');
+  },
 
-    microsoftButton: function () {
-      return this.socialAuthButton('microsoft');
-    },
+  facebookButton: function() {
+    return this.socialAuthButton('facebook');
+  },
 
-    socialAuthButtons: function () {
-      return this.$('.social-auth-button');
-    },
+  googleButton: function() {
+    return this.socialAuthButton('google');
+  },
 
-    linksAppearDisabled: function() {
-      return this.$('a.link.o-form-disabled').length === this.$('a.link').length;
-    },
+  linkedInButton: function() {
+    return this.socialAuthButton('linkedin');
+  },
 
-    inputsDisabled: function() {
-      return this.usernameField().is(':disabled') &&
-          this.passwordField().is(':disabled') &&
-          this.rememberMeCheckbox().is(':disabled');
-    },
+  microsoftButton: function() {
+    return this.socialAuthButton('microsoft');
+  },
 
-    isDisabled: function() {
-      return this.inputsDisabled() && this.linksAppearDisabled();
-    },
+  socialAuthButtons: function() {
+    return this.$('.social-auth-button');
+  },
 
-    additionalAuthButton: function() {
-      return this.$('.default-custom-button');
-    },
+  linksAppearDisabled: function() {
+    return this.$('a.link.o-form-disabled').length === this.$('a.link').length;
+  },
 
-    authDivider: function() {
-      return this.$('.auth-divider');
-    },
+  inputsDisabled: function() {
+    return (
+      this.usernameField().is(':disabled') &&
+      this.passwordField().is(':disabled') &&
+      this.rememberMeCheckbox().is(':disabled')
+    );
+  },
 
-    registrationContainer: function() {
-      return this.$('.registration-container');
-    },
+  isDisabled: function() {
+    return this.inputsDisabled() && this.linksAppearDisabled();
+  },
 
-    registrationLabel: function() {
-      return this.$('.registration-container .content-container .registration-label');
-    },
+  additionalAuthButton: function() {
+    return this.$('.default-custom-button');
+  },
 
-    registrationLink: function() {
-      return this.$('.registration-container .content-container .registration-link');
-    },
+  authDivider: function() {
+    return this.$('.auth-divider');
+  },
 
-    passwordToggleContainer: function() {
-      return this.$('.password-toggle');
-    },
+  registrationContainer: function() {
+    return this.$('.registration-container');
+  },
 
-    passwordToggleShowContainer: function() {
-      return this.$('.password-toggle span.button-show');
-    },
+  registrationLabel: function() {
+    return this.$('.registration-container .content-container .registration-label');
+  },
 
-    passwordToggleHideContainer: function() {
-      return this.$('.password-toggle span.button-hide');
-    }
-  });
+  registrationLink: function() {
+    return this.$('.registration-container .content-container .registration-link');
+  },
 
+  passwordToggleContainer: function() {
+    return this.$('.password-toggle');
+  },
+
+  passwordToggleShowContainer: function() {
+    return this.$('.password-toggle span.button-show');
+  },
+
+  passwordToggleHideContainer: function() {
+    return this.$('.password-toggle span.button-hide');
+  },
 });

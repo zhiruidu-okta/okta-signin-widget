@@ -1,330 +1,348 @@
 /* eslint max-params: [2, 25], max-statements: [2, 36], complexity:[2, 10], max-len: [2, 125] */
-define([
-  'q',
-  'okta',
-  '@okta/okta-auth-js/jquery',
-  'util/Util',
-  'helpers/mocks/Util',
-  'helpers/dom/PasswordResetForm',
-  'helpers/dom/Beacon',
-  'helpers/util/Expect',
-  'LoginRouter',
-  'sandbox',
-  'helpers/xhr/PASSWORD_RESET',
-  'helpers/xhr/PASSWORD_RESET_withComplexity',
-  'helpers/xhr/PASSWORD_RESET_error',
-  'helpers/xhr/200',
-  'helpers/xhr/SUCCESS'
-],
-function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect, Router,
-          $sandbox, resPasswordReset, resPasswordResetWithComplexity, resError, res200, resSuccess) {
+import { internal } from 'okta';
+import OktaAuth from '@okta/okta-auth-js/jquery';
+import Router from 'LoginRouter';
+import Beacon from 'helpers/dom/Beacon';
+import PasswordResetForm from 'helpers/dom/PasswordResetForm';
+import Util from 'helpers/mocks/Util';
+import Expect from 'helpers/util/Expect';
+import res200 from 'helpers/xhr/200';
+import resPasswordReset from 'helpers/xhr/PASSWORD_RESET';
+import resError from 'helpers/xhr/PASSWORD_RESET_error';
+import resPasswordResetWithComplexity from 'helpers/xhr/PASSWORD_RESET_withComplexity';
+import resSuccess from 'helpers/xhr/SUCCESS';
+import Q from 'q';
+import $sandbox from 'sandbox';
+import LoginUtil from 'util/Util';
+let { _, $ } = Okta;
+const SharedUtil = internal.util.Util;
+const itp = Expect.itp;
+const tick = Expect.tick;
 
-  var { _, $ } = Okta;
-  var SharedUtil = Okta.internal.util.Util;
-  var itp = Expect.itp;
-  var tick = Expect.tick;
+function deepClone(res) {
+  return JSON.parse(JSON.stringify(res));
+}
 
-  function deepClone(res) {
-    return JSON.parse(JSON.stringify(res));
-  }
+function setup(settings) {
+  settings || (settings = {});
+  const successSpy = jasmine.createSpy('successSpy');
+  let passwordResetResponse = resPasswordReset;
+  const policyComplexityDefaults = {
+    minLength: 8,
+    minLowerCase: 1,
+    minUpperCase: 1,
+    minNumber: 1,
+    minSymbol: 1,
+    excludeUsername: true,
+    excludeAttributes: getExcludeAttributes(settings.excludeAttributes),
+  };
+  const policyAgeMinAge = {
+    inMinutes: 30,
+    inHours: 120,
+    inDays: 2880,
+  };
+  const policyAgeDefaults = {
+    historyCount: 7,
+    minAgeMinutes: policyAgeMinAge.inMinutes,
+  };
 
-  function setup(settings) {
-    settings || (settings = {});
-    var successSpy = jasmine.createSpy('successSpy');
-    var passwordResetResponse = resPasswordReset;
-    var policyComplexityDefaults = {
-      minLength: 8,
-      minLowerCase: 1,
-      minUpperCase: 1,
-      minNumber: 1,
-      minSymbol: 1,
-      excludeUsername: true,
-      excludeAttributes: getExcludeAttributes(settings.excludeAttributes)
-    };
+  if (settings && (settings.policyComplexity || settings.policyAge)) {
+    passwordResetResponse = deepClone(resPasswordResetWithComplexity);
+    const responsePolicy = passwordResetResponse.response._embedded.policy;
 
-    var policyAgeMinAge = {
-      inMinutes: 30,
-      inHours: 120,
-      inDays: 2880
-    };
+    if (settings.policyComplexity === 'all') {
+      responsePolicy.complexity = policyComplexityDefaults;
+    } else if (settings.policyComplexity) {
+      const policyKey = settings.policyComplexity;
 
-    var policyAgeDefaults = {
-      historyCount: 7,
-      minAgeMinutes: policyAgeMinAge.inMinutes
-    };
+      responsePolicy.complexity[policyKey] = policyComplexityDefaults[policyKey];
+    }
+    delete settings.policyComplexity;
 
-    if (settings && (settings.policyComplexity || settings.policyAge)) {
-      passwordResetResponse = deepClone(resPasswordResetWithComplexity);
-      var responsePolicy = passwordResetResponse.response._embedded.policy;
+    if (settings.policyAge === 'all') {
+      responsePolicy.age = policyAgeDefaults;
+    } else if (settings.policyAge) {
+      const ageKey = settings.policyAge;
 
-      if (settings.policyComplexity === 'all') {
-        responsePolicy.complexity = policyComplexityDefaults;
-      } else if (settings.policyComplexity) {
-        var policyKey = settings.policyComplexity;
-        responsePolicy.complexity[policyKey] = policyComplexityDefaults[policyKey];
-      }
-      delete settings.policyComplexity;
-
-      if (settings.policyAge === 'all') {
-        responsePolicy.age = policyAgeDefaults;
-      } else if (settings.policyAge) {
-        var ageKey = settings.policyAge;
-        responsePolicy.age[ageKey] = policyAgeDefaults[ageKey];
-      }
-
-      // test when enough minutes for hours
-      if (settings.policyAge === 'minAgeMinutesinHours') {
-        responsePolicy.age.minAgeMinutes = policyAgeMinAge.inHours;
-      }
-      // test when enough minutes for days
-      if (settings.policyAge === 'minAgeMinutesinDays') {
-        responsePolicy.age.minAgeMinutes = policyAgeMinAge.inDays;
-      }
-      delete settings.policyAge;
+      responsePolicy.age[ageKey] = policyAgeDefaults[ageKey];
     }
 
-    var setNextResponse = Util.mockAjax();
-    var baseUrl = 'https://foo.com';
-    var authClient = new OktaAuth({url: baseUrl, transformErrorXHR: LoginUtil.transformErrorXHR});
-    var router = new Router(_.extend({
-      el: $sandbox,
-      baseUrl: baseUrl,
-      authClient: authClient,
-      globalSuccessFn: successSpy,
-      processCreds: settings.processCreds
-    }, settings));
-    var form = new PasswordResetForm($sandbox);
-    var beacon = new Beacon($sandbox);
-    Util.registerRouter(router);
-    Util.mockRouterNavigate(router);
-    Util.mockJqueryCss();
-    setNextResponse(passwordResetResponse);
-    router.refreshAuthState('dummy-token');
-    return Expect.waitForPasswordReset({
-      router: router,
-      successSpy: successSpy,
-      form: form,
-      beacon: beacon,
-      ac: authClient,
-      setNextResponse: setNextResponse
-    });
+    // test when enough minutes for hours
+    if (settings.policyAge === 'minAgeMinutesinHours') {
+      responsePolicy.age.minAgeMinutes = policyAgeMinAge.inHours;
+    }
+    // test when enough minutes for days
+    if (settings.policyAge === 'minAgeMinutesinDays') {
+      responsePolicy.age.minAgeMinutes = policyAgeMinAge.inDays;
+    }
+    delete settings.policyAge;
   }
 
-  function getExcludeAttributes (excludeAttributes) {
-    return excludeAttributes || ['firstName', 'lastName'];
-  }
+  const setNextResponse = Util.mockAjax();
+  const baseUrl = 'https://foo.com';
+  const authClient = new OktaAuth({ url: baseUrl, transformErrorXHR: LoginUtil.transformErrorXHR });
+  const router = new Router(
+    _.extend(
+      {
+        el: $sandbox,
+        baseUrl: baseUrl,
+        authClient: authClient,
+        globalSuccessFn: successSpy,
+        processCreds: settings.processCreds,
+      },
+      settings
+    )
+  );
+  const form = new PasswordResetForm($sandbox);
+  const beacon = new Beacon($sandbox);
 
-  Expect.describe('PasswordReset', function () {
-    itp('displays the security beacon if enabled', function () {
-      return setup({ 'features.securityImage': true }).then(function (test) {
-        expect(test.beacon.isSecurityBeacon()).toBe(true);
-      });
+  Util.registerRouter(router);
+  Util.mockRouterNavigate(router);
+  Util.mockJqueryCss();
+  setNextResponse(passwordResetResponse);
+  router.refreshAuthState('dummy-token');
+  return Expect.waitForPasswordReset({
+    router: router,
+    successSpy: successSpy,
+    form: form,
+    beacon: beacon,
+    ac: authClient,
+    setNextResponse: setNextResponse,
+  });
+}
+
+function getExcludeAttributes(excludeAttributes) {
+  return excludeAttributes || ['firstName', 'lastName'];
+}
+
+Expect.describe('PasswordReset', function() {
+  itp('displays the security beacon if enabled', function() {
+    return setup({ 'features.securityImage': true }).then(function(test) {
+      expect(test.beacon.isSecurityBeacon()).toBe(true);
     });
+  });
 
-    itp('has a signout link which cancels the current stateToken and navigates to primaryAuth', function () {
-      return setup()
-      .then(function (test) {
+  itp('has a signout link which cancels the current stateToken and navigates to primaryAuth', function() {
+    return setup()
+      .then(function(test) {
         $.ajax.calls.reset();
         test.setNextResponse(res200);
-        var $link = test.form.signoutLink();
+        const $link = test.form.signoutLink();
+
         expect($link.length).toBe(1);
         $link.click();
         return Expect.waitForPrimaryAuth(test);
       })
-      .then(function (test) {
+      .then(function(test) {
         expect($.ajax.calls.count()).toBe(1);
         Expect.isJsonPost($.ajax.calls.argsFor(0), {
           url: 'https://foo.com/api/v1/authn/cancel',
           data: {
-            stateToken: 'testStateToken'
-          }
+            stateToken: 'testStateToken',
+          },
         });
         Expect.isPrimaryAuth(test.router.controller);
       });
-    });
+  });
 
-    itp('has a signout link which cancels the current stateToken and redirects to the provided signout url',
-    function () {
-      return setup({ signOutLink: 'http://www.goodbye.com' })
-      .then(function (test) {
+  itp('has a signout link which cancels the current stateToken and redirects to the provided signout url', function() {
+    return setup({ signOutLink: 'http://www.goodbye.com' })
+      .then(function(test) {
         spyOn(SharedUtil, 'redirect');
         $.ajax.calls.reset();
         test.setNextResponse(res200);
-        var $link = test.form.signoutLink();
+        const $link = test.form.signoutLink();
+
         expect($link.length).toBe(1);
         $link.click();
         return tick();
       })
-      .then(function () {
+      .then(function() {
         expect($.ajax.calls.count()).toBe(1);
         Expect.isJsonPost($.ajax.calls.argsFor(0), {
           url: 'https://foo.com/api/v1/authn/cancel',
           data: {
-            stateToken: 'testStateToken'
-          }
+            stateToken: 'testStateToken',
+          },
         });
         expect(SharedUtil.redirect).toHaveBeenCalledWith('http://www.goodbye.com');
       });
-    });
+  });
 
-    itp('has a valid subtitle if NO password complexity defined', function () {
-      return setup().then(function (test) {
-        expect(test.form.subtitleText()).toEqual('');
-      });
+  itp('has a valid subtitle if NO password complexity defined', function() {
+    return setup().then(function(test) {
+      expect(test.form.subtitleText()).toEqual('');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "minLength" defined', function () {
-      return setup({policyComplexity: 'minLength'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: at least 8 characters.');
-      });
+  itp('has a valid subtitle if only password complexity "minLength" defined', function() {
+    return setup({ policyComplexity: 'minLength' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: at least 8 characters.');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "minLowerCase" defined', function () {
-      return setup({policyComplexity: 'minLowerCase'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: a lowercase letter.');
-      });
+  itp('has a valid subtitle if only password complexity "minLowerCase" defined', function() {
+    return setup({ policyComplexity: 'minLowerCase' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: a lowercase letter.');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "minUpperCase" defined', function () {
-      return setup({policyComplexity: 'minUpperCase'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: an uppercase letter.');
-      });
+  itp('has a valid subtitle if only password complexity "minUpperCase" defined', function() {
+    return setup({ policyComplexity: 'minUpperCase' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: an uppercase letter.');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "minNumber" defined', function () {
-      return setup({policyComplexity: 'minNumber'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: a number.');
-      });
+  itp('has a valid subtitle if only password complexity "minNumber" defined', function() {
+    return setup({ policyComplexity: 'minNumber' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: a number.');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "minSymbol" defined', function () {
-      return setup({policyComplexity: 'minSymbol'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: a symbol.');
-      });
+  itp('has a valid subtitle if only password complexity "minSymbol" defined', function() {
+    return setup({ policyComplexity: 'minSymbol' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: a symbol.');
     });
+  });
 
-    itp('has a valid subtitle if only password complexity "excludeUsername" defined', function () {
-      return setup({policyComplexity: 'excludeUsername'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: no parts of your username.');
-      });
+  itp('has a valid subtitle if only password complexity "excludeUsername" defined', function() {
+    return setup({ policyComplexity: 'excludeUsername' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: no parts of your username.');
     });
+  });
 
-    itp('has a valid subtitle if only excludeAttributes["firstName","lastName"] is defined', function () {
-      return setup({policyComplexity: 'excludeAttributes'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: does not include your first name,' +
-        ' does not include your last name.');
-      });
+  itp('has a valid subtitle if only excludeAttributes["firstName","lastName"] is defined', function() {
+    return setup({ policyComplexity: 'excludeAttributes' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'Password requirements: does not include your first name,' + ' does not include your last name.'
+      );
     });
+  });
 
-    itp('has a valid subtitle if only excludeAttributes["firstName"] is defined', function () {
-      return setup({policyComplexity: 'excludeAttributes', excludeAttributes: ['firstName']}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: does not include your first name.');
-      });
+  itp('has a valid subtitle if only excludeAttributes["firstName"] is defined', function() {
+    return setup({ policyComplexity: 'excludeAttributes', excludeAttributes: ['firstName'] }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: does not include your first name.');
     });
+  });
 
-    itp('has a valid subtitle if only excludeAttributes["lastName"] is defined', function () {
-      return setup({policyComplexity: 'excludeAttributes', excludeAttributes: ['lastName']}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: does not include your last name.');
-      });
+  itp('has a valid subtitle if only excludeAttributes["lastName"] is defined', function() {
+    return setup({ policyComplexity: 'excludeAttributes', excludeAttributes: ['lastName'] }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Password requirements: does not include your last name.');
     });
+  });
 
-    itp('has a valid subtitle if only excludeAttributes[] is defined', function () {
-      return setup({policyComplexity: 'all', excludeAttributes: []}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: at least 8 characters, a lowercase letter,' +
-          ' an uppercase letter, a number, a symbol, no parts of your username.');
-      });
+  itp('has a valid subtitle if only excludeAttributes[] is defined', function() {
+    return setup({ policyComplexity: 'all', excludeAttributes: [] }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'Password requirements: at least 8 characters, a lowercase letter,' +
+          ' an uppercase letter, a number, a symbol, no parts of your username.'
+      );
     });
+  });
 
-    itp('has a valid subtitle if only password age "historyCount" defined', function () {
-      return setup({policyAge: 'historyCount'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Your password cannot be any of your last 7 passwords.');
-      });
+  itp('has a valid subtitle if only password age "historyCount" defined', function() {
+    return setup({ policyAge: 'historyCount' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual('Your password cannot be any of your last 7 passwords.');
     });
+  });
 
-    itp('has a valid subtitle in minutes if only password age "minAgeMinutes" defined', function () {
-      return setup({policyAge: 'minAgeMinutes'}).then(function (test) {
+  itp('has a valid subtitle in minutes if only password age "minAgeMinutes" defined', function() {
+    return setup({ policyAge: 'minAgeMinutes' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'At least 30 minute(s) must have elapsed since you last changed your password.'
+      );
+    });
+  });
+
+  itp('has a valid subtitle in hours if only password age "minAgeMinutesinHours" defined', function() {
+    return setup({ policyAge: 'minAgeMinutesinHours' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'At least 2 hour(s) must have elapsed since you last changed your password.'
+      );
+    });
+  });
+
+  itp('has a valid subtitle in days if only password age "minAgeMinutesinDays" defined', function() {
+    return setup({ policyAge: 'minAgeMinutesinDays' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'At least 2 day(s) must have elapsed since you last changed your password.'
+      );
+    });
+  });
+
+  itp(
+    'has a valid subtitle if password complexity "excludeUsername" and password age "historyCount" defined',
+    function() {
+      return setup({ policyComplexity: 'excludeUsername', policyAge: 'historyCount' }).then(function(test) {
         expect(test.form.subtitleText()).toEqual(
-          'At least 30 minute(s) must have elapsed since you last changed your password.');
+          'Password requirements: no parts of your username.' + ' Your password cannot be any of your last 7 passwords.'
+        );
       });
-    });
+    }
+  );
 
-    itp('has a valid subtitle in hours if only password age "minAgeMinutesinHours" defined', function () {
-      return setup({policyAge: 'minAgeMinutesinHours'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual(
-          'At least 2 hour(s) must have elapsed since you last changed your password.');
-      });
-    });
-
-    itp('has a valid subtitle in days if only password age "minAgeMinutesinDays" defined', function () {
-      return setup({policyAge: 'minAgeMinutesinDays'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual(
-          'At least 2 day(s) must have elapsed since you last changed your password.');
-      });
-    });
-
-    itp('has a valid subtitle if password complexity "excludeUsername" and password age "historyCount" defined',
-      function () {
-        return setup({policyComplexity: 'excludeUsername', policyAge: 'historyCount'}).then(function (test) {
-          expect(test.form.subtitleText()).toEqual('Password requirements: no parts of your username.' +
-            ' Your password cannot be any of your last 7 passwords.');
-        });
-      }
-    );
-
-    itp('has a valid subtitle if password complexity is defined with all options', function () {
-      return setup({policyComplexity: 'all'}).then(function (test) {
-        expect(test.form.subtitleText()).toEqual('Password requirements: at least 8 characters, a lowercase letter,' +
+  itp('has a valid subtitle if password complexity is defined with all options', function() {
+    return setup({ policyComplexity: 'all' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'Password requirements: at least 8 characters, a lowercase letter,' +
           ' an uppercase letter, a number, a symbol, no parts of your username,' +
-          ' does not include your first name, does not include your last name.');
-      });
+          ' does not include your first name, does not include your last name.'
+      );
     });
+  });
 
-    itp('has a valid subtitle in minutes if password age is defined with all options', function () {
-      return setup({policyAge: 'all'}).then(function (test) {
+  itp('has a valid subtitle in minutes if password age is defined with all options', function() {
+    return setup({ policyAge: 'all' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'Your password cannot be any of your last 7 passwords.' +
+          ' At least 30 minute(s) must have elapsed since you last changed your password.'
+      );
+    });
+  });
+
+  itp(
+    'has a valid subtitle if password complexity is defined with all options and password age "historyCount" defined',
+    function() {
+      return setup({ policyComplexity: 'all', policyAge: 'historyCount' }).then(function(test) {
         expect(test.form.subtitleText()).toEqual(
-          'Your password cannot be any of your last 7 passwords.' +
-            ' At least 30 minute(s) must have elapsed since you last changed your password.');
-      });
-    });
-
-    itp('has a valid subtitle if password complexity is defined with all options and password age "historyCount" defined',
-      function () {
-        return setup({policyComplexity: 'all', policyAge: 'historyCount'}).then(function (test) {
-          expect(test.form.subtitleText())
-          .toEqual('Password requirements: at least 8 characters, a lowercase letter,' +
+          'Password requirements: at least 8 characters, a lowercase letter,' +
             ' an uppercase letter, a number, a symbol, no parts of your username,' +
             ' does not include your first name, does not include your last name.' +
-            ' Your password cannot be any of your last 7 passwords.');
-        });
+            ' Your password cannot be any of your last 7 passwords.'
+        );
       });
+    }
+  );
 
-    itp('has a valid subtitle if password age and complexity are defined with all options', function () {
-      return setup({policyComplexity: 'all', policyAge: 'all'}).then(function (test) {
-        expect(test.form.subtitleText())
-        .toEqual('Password requirements: at least 8 characters, a lowercase letter,' +
+  itp('has a valid subtitle if password age and complexity are defined with all options', function() {
+    return setup({ policyComplexity: 'all', policyAge: 'all' }).then(function(test) {
+      expect(test.form.subtitleText()).toEqual(
+        'Password requirements: at least 8 characters, a lowercase letter,' +
           ' an uppercase letter, a number, a symbol, no parts of your username,' +
           ' does not include your first name, does not include your last name.' +
           ' Your password cannot be any of your last 7 passwords.' +
-          ' At least 30 minute(s) must have elapsed since you last changed your password.');
-      });
+          ' At least 30 minute(s) must have elapsed since you last changed your password.'
+      );
     });
+  });
 
-    itp('has a password field to enter the new password', function () {
-      return setup().then(function (test) {
-        Expect.isPasswordField(test.form.newPasswordField());
-      });
+  itp('has a password field to enter the new password', function() {
+    return setup().then(function(test) {
+      Expect.isPasswordField(test.form.newPasswordField());
     });
+  });
 
-    itp('has a password field to confirm the new password', function () {
-      return setup().then(function (test) {
-        Expect.isPasswordField(test.form.confirmPasswordField());
-      });
+  itp('has a password field to confirm the new password', function() {
+    return setup().then(function(test) {
+      Expect.isPasswordField(test.form.confirmPasswordField());
     });
+  });
 
-    itp('calls processCreds function before saving a model', function () {
-      var processCredsSpy = jasmine.createSpy('processCredsSpy');
-      return setup({ processCreds: processCredsSpy })
-      .then(function (test) {
+  itp('calls processCreds function before saving a model', function() {
+    const processCredsSpy = jasmine.createSpy('processCredsSpy');
+
+    return setup({ processCreds: processCredsSpy })
+      .then(function(test) {
         $.ajax.calls.reset();
         test.setNextResponse(resSuccess);
         test.form.setNewPassword('newpwd');
@@ -336,21 +354,22 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
         expect(processCredsSpy.calls.count()).toBe(1);
         expect(processCredsSpy).toHaveBeenCalledWith({
           username: 'administrator1@clouditude.net',
-          password: 'newpwd'
+          password: 'newpwd',
         });
         expect($.ajax.calls.count()).toBe(1);
       });
-    });
+  });
 
-    itp('calls async processCreds function before saving a model', function () {
-      var processCredsSpy = jasmine.createSpy('processCredsSpy');
-      return setup({
-        'processCreds': function(creds, callback) {
-          processCredsSpy(creds, callback);
-          callback();
-        }
-      })
-      .then(function (test) {
+  itp('calls async processCreds function before saving a model', function() {
+    const processCredsSpy = jasmine.createSpy('processCredsSpy');
+
+    return setup({
+      processCreds: function(creds, callback) {
+        processCredsSpy(creds, callback);
+        callback();
+      },
+    })
+      .then(function(test) {
         $.ajax.calls.reset();
         test.setNextResponse(resSuccess);
         test.form.setNewPassword('newpwd');
@@ -360,22 +379,26 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
       })
       .then(function() {
         expect(processCredsSpy.calls.count()).toBe(1);
-        expect(processCredsSpy).toHaveBeenCalledWith({
-          username: 'administrator1@clouditude.net',
-          password: 'newpwd'
-        }, jasmine.any(Function));
+        expect(processCredsSpy).toHaveBeenCalledWith(
+          {
+            username: 'administrator1@clouditude.net',
+            password: 'newpwd',
+          },
+          jasmine.any(Function)
+        );
         expect($.ajax.calls.count()).toBe(1);
       });
-    });
+  });
 
-    itp('calls async processCreds function and can prevent saving a model', function () {
-      var processCredsSpy = jasmine.createSpy('processCredsSpy');
-      return setup({
-        'processCreds': function(creds, callback) {
-          processCredsSpy(creds, callback);
-        }
-      })
-      .then(function (test) {
+  itp('calls async processCreds function and can prevent saving a model', function() {
+    const processCredsSpy = jasmine.createSpy('processCredsSpy');
+
+    return setup({
+      processCreds: function(creds, callback) {
+        processCredsSpy(creds, callback);
+      },
+    })
+      .then(function(test) {
         $.ajax.calls.reset();
         test.setNextResponse(resSuccess);
         test.form.setNewPassword('newpwd');
@@ -385,17 +408,20 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
       })
       .then(function() {
         expect(processCredsSpy.calls.count()).toBe(1);
-        expect(processCredsSpy).toHaveBeenCalledWith({
-          username: 'administrator1@clouditude.net',
-          password: 'newpwd'
-        }, jasmine.any(Function));
+        expect(processCredsSpy).toHaveBeenCalledWith(
+          {
+            username: 'administrator1@clouditude.net',
+            password: 'newpwd',
+          },
+          jasmine.any(Function)
+        );
         expect($.ajax.calls.count()).toBe(0);
       });
-    });
+  });
 
-    itp('makes the right auth request when form is submitted', function () {
-      return setup()
-      .then(function (test) {
+  itp('makes the right auth request when form is submitted', function() {
+    return setup()
+      .then(function(test) {
         $.ajax.calls.reset();
         test.form.setNewPassword('imsorrymsjackson');
         test.form.setConfirmPassword('imsorrymsjackson');
@@ -403,21 +429,21 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
         test.form.submit();
         return Expect.waitForSpyCall(test.successSpy);
       })
-      .then(function () {
+      .then(function() {
         expect($.ajax.calls.count()).toBe(1);
         Expect.isJsonPost($.ajax.calls.argsFor(0), {
           url: 'https://foo.com/api/v1/authn/credentials/reset_password',
           data: {
             newPassword: 'imsorrymsjackson',
-            stateToken: 'testStateToken'
-          }
+            stateToken: 'testStateToken',
+          },
         });
       });
-    });
+  });
 
-    itp('makes submit button disable when form is submitted', function () {
-      return setup()
-      .then(function (test) {
+  itp('makes submit button disable when form is submitted', function() {
+    return setup()
+      .then(function(test) {
         $.ajax.calls.reset();
         test.form.setNewPassword('pwd');
         test.form.setConfirmPassword('pwd');
@@ -425,16 +451,17 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
         test.form.submit();
         return tick(test);
       })
-      .then(function (test) {
-        var button = test.form.submitButton();
-        var buttonClass = button.attr('class');
+      .then(function(test) {
+        const button = test.form.submitButton();
+        const buttonClass = button.attr('class');
+
         expect(buttonClass).toContain('link-button-disabled');
       });
-    });
+  });
 
-    itp('makes submit button enabled after error response', function () {
-      return setup()
-      .then(function (test) {
+  itp('makes submit button enabled after error response', function() {
+    return setup()
+      .then(function(test) {
         $.ajax.calls.reset();
         test.form.setNewPassword('pwd');
         test.form.setConfirmPassword('pwd');
@@ -442,38 +469,39 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
         test.form.submit();
         return Expect.waitForFormError(test.form, test);
       })
-      .then(function (test) {
-        var button = test.form.submitButton();
-        var buttonClass = button.attr('class');
+      .then(function(test) {
+        const button = test.form.submitButton();
+        const buttonClass = button.attr('class');
+
         expect(buttonClass).not.toContain('link-button-disabled');
       });
-    });
+  });
 
-    itp('validates that the fields are not empty before submitting', function () {
-      return setup().then(function (test) {
-        $.ajax.calls.reset();
-        test.form.submit();
-        expect($.ajax).not.toHaveBeenCalled();
-        expect(test.form.hasErrors()).toBe(true);
-        Expect.isEmptyFieldError(test.form.newPassFieldError());
-        Expect.isEmptyFieldError(test.form.confirmPassFieldError());
-      });
+  itp('validates that the fields are not empty before submitting', function() {
+    return setup().then(function(test) {
+      $.ajax.calls.reset();
+      test.form.submit();
+      expect($.ajax).not.toHaveBeenCalled();
+      expect(test.form.hasErrors()).toBe(true);
+      Expect.isEmptyFieldError(test.form.newPassFieldError());
+      Expect.isEmptyFieldError(test.form.confirmPassFieldError());
     });
+  });
 
-    itp('validates that the passwords match before submitting', function () {
-      return setup().then(function (test) {
-        $.ajax.calls.reset();
-        test.form.setNewPassword('a');
-        test.form.setConfirmPassword('z');
-        test.form.submit();
-        expect($.ajax).not.toHaveBeenCalled();
-        expect(test.form.hasErrors()).toBe(true);
-      });
+  itp('validates that the passwords match before submitting', function() {
+    return setup().then(function(test) {
+      $.ajax.calls.reset();
+      test.form.setNewPassword('a');
+      test.form.setConfirmPassword('z');
+      test.form.submit();
+      expect($.ajax).not.toHaveBeenCalled();
+      expect(test.form.hasErrors()).toBe(true);
     });
+  });
 
-    itp('shows an error msg if there is an error submitting', function () {
-      return setup()
-      .then(function (test) {
+  itp('shows an error msg if there is an error submitting', function() {
+    return setup()
+      .then(function(test) {
         Q.stopUnhandledRejectionTracking();
         test.setNextResponse(resError);
         test.form.setNewPassword('a');
@@ -481,15 +509,13 @@ function (Q, Okta, OktaAuth, LoginUtil, Util, PasswordResetForm, Beacon, Expect,
         test.form.submit();
         return tick(test);
       })
-      .then(function (test) {
+      .then(function(test) {
         expect(test.form.hasErrors()).toBe(true);
         expect(test.form.errorMessage()).toBe(
           'Password requirements were not met. Password requirements: at least 8 characters,' +
-          ' a lowercase letter, an uppercase letter, a number, no parts of your username,' +
-          ' does not include your first name, does not include your last name.'
+            ' a lowercase letter, an uppercase letter, a number, no parts of your username,' +
+            ' does not include your first name, does not include your last name.'
         );
       });
-    });
   });
-
 });

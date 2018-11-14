@@ -1,38 +1,34 @@
-define(['./Form'], function (Form) {
+import Form from './Form';
+export default Form.extend({
+  userLogo: function() {
+    return this.$('.user-logo');
+  },
 
-  return Form.extend({
+  clientLogo: function() {
+    return this.$('.client-logo');
+  },
 
-    userLogo: function () {
-      return this.$('.user-logo');
-    },
+  scopeList: function() {
+    return this.$('.scope-list-wrapper');
+  },
 
-    clientLogo: function () {
-      return this.$('.client-logo');
-    },
+  consentTitle: function() {
+    return this.$('.consent-title');
+  },
 
-    scopeList: function () {
-      return this.$('.scope-list-wrapper');
-    },
+  termsOfService: function() {
+    return this.$('.terms-of-service');
+  },
 
-    consentTitle: function () {
-      return this.$('.consent-title');
-    },
+  privacyPolicy: function() {
+    return this.$('.privacy-policy');
+  },
 
-    termsOfService: function () {
-      return this.$('.terms-of-service');
-    },
+  consentButton: function() {
+    return this.$('.consent-required input[data-type="save"]');
+  },
 
-    privacyPolicy: function () {
-      return this.$('.privacy-policy');
-    },
-
-    consentButton: function() {
-      return this.$('.consent-required input[data-type="save"]');
-    },
-
-    cancelButton: function() {
-      return this.$('.consent-required input[data-type="cancel"]');
-    }
-  });
-
+  cancelButton: function() {
+    return this.$('.consent-required input[data-type="cancel"]');
+  },
 });

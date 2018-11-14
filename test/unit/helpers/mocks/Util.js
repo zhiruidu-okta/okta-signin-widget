@@ -1,318 +1,321 @@
 /* eslint no-global-assign: 0, max-statements: 0 */
-define([
-  'okta',
-  'q',
-  'duo'
-],
-function (Okta, Q, Duo) {
+import { internal } from 'okta';
+import Duo from 'duo';
+import Q from 'q';
+let { _, $, Backbone } = Okta;
+let { Cookie } = internal.util;
+const fn = {};
 
-  var { _, $, Backbone } = Okta;
-  var { Cookie } = Okta.internal.util;
+fn.LoremIpsum =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
+  'Sed lacinia neque at ligula ornare accumsan. Nullam interdum pellentesque nisl, ' +
+  'ut tempor eros gravida egestas. Curabitur tempus dignissim justo et pellentesque. ' +
+  'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.';
 
-  var fn = {};
+fn.mockGetCookie = function(name, value) {
+  spyOn(Cookie, 'getCookie').and.callFake(function(nameGiven) {
+    return name === nameGiven ? value : undefined;
+  });
+  return Cookie.getCookie;
+};
 
-  fn.LoremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
-      'Sed lacinia neque at ligula ornare accumsan. Nullam interdum pellentesque nisl, ' +
-      'ut tempor eros gravida egestas. Curabitur tempus dignissim justo et pellentesque. ' +
-      'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.';
+fn.mockSetCookie = function() {
+  spyOn(Cookie, 'setCookie');
+  return Cookie.setCookie;
+};
 
-  fn.mockGetCookie = function (name, value) {
-    spyOn(Cookie, 'getCookie').and.callFake(function (nameGiven) {
-      return name === nameGiven ? value : undefined;
+fn.mockSDKCookie = function(authClient, key, value) {
+  key = key || 'oktaStateToken';
+  value = value || 'testStateToken';
+  spyOn(authClient.tx.exists, '_getCookie').and.returnValue(value);
+};
+
+fn.mockRemoveCookie = function() {
+  spyOn(Cookie, 'removeCookie');
+  return Cookie.removeCookie;
+};
+
+fn.mockRouterNavigate = function(router, start) {
+  spyOn(router, 'navigate').and.callFake(function(fragment) {
+    Backbone.history.root = '/';
+    Backbone.history.loadUrl(fragment);
+  });
+
+  if (start) {
+    spyOn(window, 'addEventListener');
+    router.start();
+  }
+};
+
+fn.mockDuo = function() {
+  spyOn(Duo, 'init');
+};
+
+fn.mockAjax = function(responses) {
+  let allResponses = [];
+  let textOnly = false;
+
+  if (responses) {
+    allResponses = allResponses.concat(responses);
+  }
+
+  spyOn($, 'post').and.callFake(function(url, data) {
+    return $.ajax({
+      url: url,
+      type: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      data: JSON.stringify(data),
     });
-    return Cookie.getCookie;
-  };
+  });
 
-  fn.mockSetCookie = function () {
-    spyOn(Cookie, 'setCookie');
-    return Cookie.setCookie;
-  };
+  spyOn($, 'ajax').and.callFake(function(req) {
+    const xhr = allResponses.shift();
 
-  fn.mockSDKCookie = function (authClient, key, value) {
-    key = key || 'oktaStateToken';
-    value = value || 'testStateToken';
-    spyOn(authClient.tx.exists, '_getCookie').and.returnValue(value);
-  };
-
-  fn.mockRemoveCookie = function () {
-    spyOn(Cookie, 'removeCookie');
-    return Cookie.removeCookie;
-  };
-
-  fn.mockRouterNavigate = function (router, start) {
-    spyOn(router, 'navigate').and.callFake(function (fragment) {
-      Backbone.history.root = '/';
-      Backbone.history.loadUrl(fragment);
-    });
-
-    if (start) {
-      spyOn(window, 'addEventListener');
-      router.start();
+    if (!xhr) {
+      throw new Error(
+        'We are making a request that we have not anticipated: ' + req.type.toUpperCase() + ' ' + req.url
+      );
     }
-  };
 
-  fn.mockDuo = function () {
-    spyOn(Duo, 'init');
-  };
-
-  fn.mockAjax = function (responses) {
-
-    var allResponses = [];
-    var textOnly = false;
-
-    if (responses) {
-      allResponses = allResponses.concat(responses);
+    // Place response into responseText (AuthClient SDK depends on this)
+    if (textOnly) {
+      xhr.responseText = xhr.response;
+    } else {
+      xhr.responseText = JSON.stringify(xhr.response);
     }
 
-    spyOn($, 'post').and.callFake(function(url, data) {
-      return $.ajax({
-        url: url,
-        type: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json'
-        },
-        data: JSON.stringify(data)
-      });
-    });
+    const deferred = $.Deferred();
 
-    spyOn($, 'ajax').and.callFake(function(req) {
-
-      var xhr = allResponses.shift();
-      if (!xhr) {
-        throw new Error(
-          'We are making a request that we have not anticipated: ' +
-          req.type.toUpperCase() + ' ' + req.url
-        );
-      }
-
-      // Place response into responseText (AuthClient SDK depends on this)
-      if (textOnly) {
-        xhr.responseText = xhr.response;
-      } else {
-        xhr.responseText = JSON.stringify(xhr.response);
-      }
-
-      var deferred = $.Deferred();
-
-      (function (textOnly) {
-        setTimeout(function () {
-          if (xhr.status > 0 && xhr.status < 300) {
-            // $.ajax send (data, textStatus, jqXHR) on success
-            deferred.resolve(xhr.response, null, xhr);
-          } else {
-            // $.ajax send (jqXHR, textStatus, errorThrown) on failure
-            if (!textOnly) {
-              xhr.responseJSON = xhr.response;
-            }
-            deferred.reject(xhr, null, xhr.response);
+    (function(textOnly) {
+      setTimeout(function() {
+        if (xhr.status > 0 && xhr.status < 300) {
+          // $.ajax send (data, textStatus, jqXHR) on success
+          deferred.resolve(xhr.response, null, xhr);
+        } else {
+          // $.ajax send (jqXHR, textStatus, errorThrown) on failure
+          if (!textOnly) {
+            xhr.responseJSON = xhr.response;
           }
-        }, xhr.delay || 0);
-      })(textOnly);
+          deferred.reject(xhr, null, xhr.response);
+        }
+      }, xhr.delay || 0);
+    })(textOnly);
 
-      textOnly = false;
-      return deferred;
-    });
+    textOnly = false;
+    return deferred;
+  });
 
-    function setNextResponse(response, responseTextOnly) {
-      if (_.isArray(response)) {
-        allResponses = response.concat(allResponses);
-      } else {
-        allResponses.unshift(response);
-      }
-      textOnly = responseTextOnly;
+  function setNextResponse(response, responseTextOnly) {
+    if (_.isArray(response)) {
+      allResponses = response.concat(allResponses);
+    } else {
+      allResponses.unshift(response);
     }
+    textOnly = responseTextOnly;
+  }
 
-    return setNextResponse;
-  };
+  return setNextResponse;
+};
 
-  // Useful for overriding setting of security image (which tries to load
-  // a file that does not exist in our tests)
-  fn.mockJqueryCss = function () {
-    var original = $.fn.css;
-    spyOn($.fn, 'css').and.callFake(function() {
-      var data = arguments[0];
+// Useful for overriding setting of security image (which tries to load
+// a file that does not exist in our tests)
+fn.mockJqueryCss = function() {
+  const original = $.fn.css;
 
-      switch (data['background-image']) {
+  spyOn($.fn, 'css').and.callFake(function() {
+    const data = arguments[0];
+
+    switch (data['background-image']) {
       case 'url(/img/security/unknown-device.png)':
       case 'url(/img/security/default.png)':
         return;
-      }
-
-      return original.apply(this, arguments);
-    });
-  };
-
-  fn.speedUpPolling = function () {
-    var original = Q.delay;
-    spyOn(Q, 'delay').and.callFake(function() {
-      return original.call(this, 0);
-    });
-  };
-
-  fn.mockRateLimiting = function () {
-    var deferred = Q.defer();
-    spyOn(Q, 'delay').and.callFake(function () {
-      return deferred.promise;
-    });
-    return deferred;
-  };
-
-  fn.speedUpDelay = function () {
-    var delay = _.delay;
-    spyOn(_, 'delay').and.callFake(function (func, wait, args) {
-      return delay(func, 0, args);
-    });
-  };
-
-  // Random 'state' generator in Auth SDK for OIDC
-  fn.mockOIDCStateGenerator = function () {
-    spyOn(Math, 'random').and.returnValue(0.1);
-  };
-
-  fn.stallEnrollFactorPoll = function (authClient, originalAjax) {
-    // Needed in order to reset the mock. Jasmine spies don't have restore()
-    if (authClient.options.ajaxRequest.calls) {
-      authClient.options.ajaxRequest = originalAjax;
     }
-    originalAjax = authClient.options.ajaxRequest;
-    spyOn(authClient.options, 'ajaxRequest').and.callFake(function (method, uri) {
-      var isPollFn = uri.indexOf('/lifecycle/activate') !== -1;
-      if (isPollFn) {
-        // return waiting xhr
-        return Q.resolve({
-          status: 200,
-          responseText: JSON.stringify({
-            'stateToken': 'testStateToken',
-            'factorResult': 'WAITING'
-          })
-        });
-      }
 
-      return originalAjax.apply(this, arguments);
-    });
+    return original.apply(this, arguments);
+  });
+};
 
-    return originalAjax;
-  };
+fn.speedUpPolling = function() {
+  const original = Q.delay;
 
-  fn.resumeEnrollFactorPoll = function (authClient, originalAjax, response) {
-    if (authClient.options.ajaxRequest.calls) {
-      authClient.options.ajaxRequest = originalAjax;
-    }
-    if (response.response && !response.responseText) {
-      response.responseText = JSON.stringify(response.response);
-    }
-    originalAjax = authClient.options.ajaxRequest;
-    spyOn(authClient.options, 'ajaxRequest').and.callFake(function (method, uri) {
-      var isPollFn = uri.indexOf('/activate') !== -1;
-      if (isPollFn) {
-        authClient.options.ajaxRequest = originalAjax;
-        return Q.resolve(response);
-      }
-      return originalAjax.apply(this, arguments);
-    });
-    return originalAjax;
-  };
+  spyOn(Q, 'delay').and.callFake(function() {
+    return original.call(this, 0);
+  });
+};
 
-  fn.stopRouter = function () {
-    Backbone.history.stop();
-  };
+fn.mockRateLimiting = function() {
+  const deferred = Q.defer();
 
-  // Needs to be preceded by a call to mockRouterNavigate() with startRouter as true.
-  fn.triggerBrowserBackButton = function () {
-    var args = window.addEventListener.calls.argsFor(0);
-    var callback = args[1];
-    callback.call(null, {
-      preventDefault: function () {},
-      stopImmediatePropagation: function () {}
-    });
-  };
+  spyOn(Q, 'delay').and.callFake(function() {
+    return deferred.promise;
+  });
+  return deferred;
+};
 
-  function isNative(fn) {
-    return fn.toString().indexOf('[native code]') > 0;
+fn.speedUpDelay = function() {
+  const delay = _.delay;
+
+  spyOn(_, 'delay').and.callFake(function(func, wait, args) {
+    return delay(func, 0, args);
+  });
+};
+
+// Random 'state' generator in Auth SDK for OIDC
+fn.mockOIDCStateGenerator = function() {
+  spyOn(Math, 'random').and.returnValue(0.1);
+};
+
+fn.stallEnrollFactorPoll = function(authClient, originalAjax) {
+  // Needed in order to reset the mock. Jasmine spies don't have restore()
+  if (authClient.options.ajaxRequest.calls) {
+    authClient.options.ajaxRequest = originalAjax;
   }
+  originalAjax = authClient.options.ajaxRequest;
+  spyOn(authClient.options, 'ajaxRequest').and.callFake(function(method, uri) {
+    const isPollFn = uri.indexOf('/lifecycle/activate') !== -1;
 
-  /*
-    We track timeouts and intervals so we can remove them between
-    Jasmine tests. This ensures our tests are independent.
-
-    ex: polling no longer makes requests that we don't expect
-  */
-  var timeouts = [];
-  var originalSetTimeout;
-
-  fn.mockSetTimeout = function() {
-    if (isNative(setTimeout)) {
-      originalSetTimeout = setTimeout;
-      setTimeout = function() {
-        var id = originalSetTimeout.apply(this, arguments);
-        timeouts.push(id);
-        return id;
-      };
+    if (isPollFn) {
+      // return waiting xhr
+      return Q.resolve({
+        status: 200,
+        responseText: JSON.stringify({
+          stateToken: 'testStateToken',
+          factorResult: 'WAITING',
+        }),
+      });
     }
-  };
 
-  fn.clearAllTimeouts = function() {
-    while (timeouts.length) {
-      clearTimeout(timeouts.pop());
+    return originalAjax.apply(this, arguments);
+  });
+
+  return originalAjax;
+};
+
+fn.resumeEnrollFactorPoll = function(authClient, originalAjax, response) {
+  if (authClient.options.ajaxRequest.calls) {
+    authClient.options.ajaxRequest = originalAjax;
+  }
+  if (response.response && !response.responseText) {
+    response.responseText = JSON.stringify(response.response);
+  }
+  originalAjax = authClient.options.ajaxRequest;
+  spyOn(authClient.options, 'ajaxRequest').and.callFake(function(method, uri) {
+    const isPollFn = uri.indexOf('/activate') !== -1;
+
+    if (isPollFn) {
+      authClient.options.ajaxRequest = originalAjax;
+      return Q.resolve(response);
     }
-  };
+    return originalAjax.apply(this, arguments);
+  });
+  return originalAjax;
+};
 
-  var intervals = [];
-  var originalSetInterval;
+fn.stopRouter = function() {
+  Backbone.history.stop();
+};
 
-  fn.mockSetInterval = function() {
-    if (isNative(setInterval)) {
-      originalSetInterval = setInterval;
-      setInterval = function() {
-        var id = originalSetInterval.apply(this, arguments);
-        timeouts.push(id);
-        return id;
-      };
+// Needs to be preceded by a call to mockRouterNavigate() with startRouter as true.
+fn.triggerBrowserBackButton = function() {
+  const args = window.addEventListener.calls.argsFor(0);
+  const callback = args[1];
+
+  callback.call(null, {
+    preventDefault: function() {},
+    stopImmediatePropagation: function() {},
+  });
+};
+
+function isNative(fn) {
+  return fn.toString().indexOf('[native code]') > 0;
+}
+
+/*
+  We track timeouts and intervals so we can remove them between
+  Jasmine tests. This ensures our tests are independent.
+   ex: polling no longer makes requests that we don't expect
+*/
+const timeouts = [];
+let originalSetTimeout;
+
+fn.mockSetTimeout = function() {
+  if (isNative(setTimeout)) {
+    originalSetTimeout = setTimeout;
+    setTimeout = function() {
+      const id = originalSetTimeout.apply(this, arguments);
+
+      timeouts.push(id);
+      return id;
+    };
+  }
+};
+
+fn.clearAllTimeouts = function() {
+  while (timeouts.length) {
+    clearTimeout(timeouts.pop());
+  }
+};
+
+const intervals = [];
+let originalSetInterval;
+
+fn.mockSetInterval = function() {
+  if (isNative(setInterval)) {
+    originalSetInterval = setInterval;
+    setInterval = function() {
+      const id = originalSetInterval.apply(this, arguments);
+
+      timeouts.push(id);
+      return id;
+    };
+  }
+};
+
+fn.clearAllIntervals = function() {
+  while (intervals.length) {
+    clearTimeout(intervals.pop());
+  }
+};
+
+const registeredRouters = [];
+
+// Call this method in each setup function so that we can do cleanup
+// after the test has run
+fn.registerRouter = function(router) {
+  registeredRouters.push(router);
+};
+
+fn.cleanupRouter = function() {
+  let current;
+
+  while (registeredRouters.length) {
+    current = registeredRouters.pop();
+    if (current.controller) {
+      current.stopListening(current.controller);
+      current.stopListening(current.controller.state);
+      current.controller.remove();
     }
-  };
+  }
+};
 
-  fn.clearAllIntervals = function() {
-    while (intervals.length) {
-      clearTimeout(intervals.pop());
-    }
-  };
+fn.deepCopy = function(res) {
+  return JSON.parse(JSON.stringify(res));
+};
 
-  var registeredRouters = [];
+fn.getAutoPushResponse = function(response, autoPushVal) {
+  const responseCopy = fn.deepCopy(response);
+  const embeddedResponse = responseCopy['response']['_embedded'];
+  const factors = embeddedResponse['factors'];
 
-  // Call this method in each setup function so that we can do cleanup
-  // after the test has run
-  fn.registerRouter = function (router) {
-    registeredRouters.push(router);
-  };
+  const factorId = _.findWhere(factors, { factorType: 'push', provider: 'OKTA' }).id;
 
-  fn.cleanupRouter = function () {
-    var current;
-    while (registeredRouters.length) {
-      current = registeredRouters.pop();
-      if (current.controller) {
-        current.stopListening(current.controller);
-        current.stopListening(current.controller.state);
-        current.controller.remove();
-      }
-    }
-  };
+  const policy = embeddedResponse['policy'];
 
-  fn.deepCopy = function (res) {
-    return JSON.parse(JSON.stringify(res));
-  };
+  policy['factorsPolicyInfo'][factorId]['autoPushEnabled'] = autoPushVal;
+  return responseCopy;
+};
 
-  fn.getAutoPushResponse = function (response, autoPushVal) {
-    var responseCopy = fn.deepCopy(response);
-    var embeddedResponse = responseCopy['response']['_embedded'];
-    var factors = embeddedResponse['factors'];
-    var factorId = _.findWhere(factors, {factorType: 'push', provider: 'OKTA'}).id;
-    var policy = embeddedResponse['policy'];
-
-    policy['factorsPolicyInfo'][factorId]['autoPushEnabled'] = autoPushVal;
-    return responseCopy;
-  };
-
-  return fn;
-
-});
+export default fn;

@@ -1,151 +1,159 @@
-define(['okta', './Dom'], function (Okta, Dom) {
+import Dom from './Dom';
+const { _, $ } = Okta;
+export default Dom.extend({
+  titleText: function() {
+    return this.el('o-form-head').trimmedText();
+  },
 
-  var { _, $ } = Okta;
-  return Dom.extend({
+  subtitleText: function() {
+    return this.el('o-form-explain').trimmedText();
+  },
 
-    titleText: function () {
-      return this.el('o-form-head').trimmedText();
-    },
+  subtitle: function() {
+    return this.el('o-form-explain');
+  },
 
-    subtitleText: function () {
-      return this.el('o-form-explain').trimmedText();
-    },
+  inputWrap: function(field) {
+    return this.el('o-form-input-' + field);
+  },
 
-    subtitle: function () {
-      return this.el('o-form-explain');
-    },
+  input: function(field) {
+    return this.inputWrap(field).find('input');
+  },
 
-    inputWrap: function (field) {
-      return this.el('o-form-input-' + field);
-    },
+  inlineLabel: function(field) {
+    return this.inputWrap(field).find('.o-form-label-inline');
+  },
 
-    input: function (field) {
-      return this.inputWrap(field).find('input');
-    },
+  select: function(field) {
+    return this.inputWrap(field).find('select');
+  },
 
-    inlineLabel: function (field) {
-      return this.inputWrap(field).find('.o-form-label-inline');
-    },
+  autocomplete: function(field) {
+    return this.input(field).attr('autocomplete');
+  },
 
-    select: function (field) {
-      return this.inputWrap(field).find('select');
-    },
+  selectOptions: function(field) {
+    return _.map(this.select(field).find('option'), function(el) {
+      return {
+        val: el.value,
+        text: $.trim(el.innerHTML),
+      };
+    });
+  },
 
-    autocomplete: function (field) {
-      return this.input(field).attr('autocomplete');
-    },
+  selectedOption: function(field) {
+    return this.inputWrap(field)
+      .find('.chzn-single span')
+      .trimmedText();
+  },
 
-    selectOptions: function (field) {
-      return _.map(this.select(field).find('option'), function (el) {
-        return {
-          val: el.value,
-          text: $.trim(el.innerHTML)
-        };
-      });
-    },
+  selectOption: function(field, val) {
+    const $select = this.select(field);
 
-    selectedOption: function (field) {
-      return this.inputWrap(field).find('.chzn-single span').trimmedText();
-    },
+    $select.val(val);
+    $select.trigger('liszt:updated');
+    $select.trigger('change');
+  },
 
-    selectOption: function (field, val) {
-      var $select = this.select(field);
-      $select.val(val);
-      $select.trigger('liszt:updated');
-      $select.trigger('change');
-    },
+  error: function(field) {
+    const $error = this.inputWrap(field).next();
 
-    error: function (field) {
-      var $error = this.inputWrap(field).next();
-      if (!$error.is('.o-form-input-error')) {
-        throw new Error('No error for field: ' + field);
-      }
-      return $error;
-    },
+    if (!$error.is('.o-form-input-error')) {
+      throw new Error('No error for field: ' + field);
+    }
+    return $error;
+  },
 
-    checkbox: function (field) {
-      return this.inputWrap(field).find(':checkbox');
-    },
+  checkbox: function(field) {
+    return this.inputWrap(field).find(':checkbox');
+  },
 
-    checkboxLabel: function (field) {
-      return this.inputWrap(field).find('label');
-    },
+  checkboxLabel: function(field) {
+    return this.inputWrap(field).find('label');
+  },
 
-    checkboxLabelText: function (field) {
-      return this.checkboxLabel(field).trimmedText();
-    },
+  checkboxLabelText: function(field) {
+    return this.checkboxLabel(field).trimmedText();
+  },
 
-    labelText: function (field) {
-      return this.inputWrap(field).closest('[data-se="o-form-fieldset"]').find('label').trimmedText();
-    },
+  labelText: function(field) {
+    return this.inputWrap(field)
+      .closest('[data-se="o-form-fieldset"]')
+      .find('label')
+      .trimmedText();
+  },
 
-    tooltipApi: function (field) {
-      var element,
-          formInput = this.inputWrap(field);
+  tooltipApi: function(field) {
+    let element;
+    const formInput = this.inputWrap(field);
 
-      if (formInput.length) {
-        element = formInput.find('.input-tooltip')[0];
-      } else {
-        element = this.el(field);
-      }
-
-      return $(element).qtip('api');
-    },
-
-    tooltipText: function (field) {
-      var api,
-          tooltipText;
-
-      api = this.tooltipApi(field);
-      tooltipText = api ? api.show().tooltip.text() : undefined;
-
-      // Remove the tooltip from the DOM to
-      // prevent elements from lingering around.
-      api.tooltip.remove();
-
-      return tooltipText;
-    },
-
-    button: function (selector) {
-      return this.$(selector + '.button');
-    },
-
-    submitButton: function () {
-      return $('[data-type="save"]');
-    },
-
-    submitButtonText: function () {
-      return this.submitButton().val();
-    },
-
-    submit: function () {
-      this.submitButton().click();
-    },
-
-    hasErrors: function () {
-      return this.$('.okta-form-infobox-error').length > 0;
-    },
-
-    errorBox: function () {
-      return this.el('o-form-error-container').find('.infobox-error');
-    },
-
-    errorMessage: function () {
-      return this.$('.okta-form-infobox-error p').text().trim();
-    },
-
-    accessibilityText: function() {
-      return this.$('.accessibility-text').text().trim();
-    },
-
-    warningMessage: function () {
-      return this.$('.okta-form-infobox-warning p').text().trim();
-    },
-
-    hasWarningMessage: function () {
-      return this.$('.okta-form-infobox-warning').length > 0;
+    if (formInput.length) {
+      element = formInput.find('.input-tooltip')[0];
+    } else {
+      element = this.el(field);
     }
 
-  });
+    return $(element).qtip('api');
+  },
 
+  tooltipText: function(field) {
+    let api;
+    let tooltipText;
+
+    api = this.tooltipApi(field);
+    tooltipText = api ? api.show().tooltip.text() : undefined;
+
+    // Remove the tooltip from the DOM to
+    // prevent elements from lingering around.
+    api.tooltip.remove();
+
+    return tooltipText;
+  },
+
+  button: function(selector) {
+    return this.$(selector + '.button');
+  },
+
+  submitButton: function() {
+    return $('[data-type="save"]');
+  },
+
+  submitButtonText: function() {
+    return this.submitButton().val();
+  },
+
+  submit: function() {
+    this.submitButton().click();
+  },
+
+  hasErrors: function() {
+    return this.$('.okta-form-infobox-error').length > 0;
+  },
+
+  errorBox: function() {
+    return this.el('o-form-error-container').find('.infobox-error');
+  },
+
+  errorMessage: function() {
+    return this.$('.okta-form-infobox-error p')
+      .text()
+      .trim();
+  },
+
+  accessibilityText: function() {
+    return this.$('.accessibility-text')
+      .text()
+      .trim();
+  },
+
+  warningMessage: function() {
+    return this.$('.okta-form-infobox-warning p')
+      .text()
+      .trim();
+  },
+
+  hasWarningMessage: function() {
+    return this.$('.okta-form-infobox-warning').length > 0;
+  },
 });

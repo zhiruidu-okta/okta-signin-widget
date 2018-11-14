@@ -1,84 +1,97 @@
-define(['okta', './Form'], function (Okta, Form) {
+import Form from './Form';
+const { _, $ } = Okta;
+export default Form.extend({
+  factorRow: function(factorName) {
+    return this.el(factorName);
+  },
 
-  var { _, $ } = Okta;
+  factorDescription: function(factorName) {
+    return this.factorRow(factorName).find('.enroll-factor-description');
+  },
 
-  return Form.extend({
+  factorIconClass: function(factorName) {
+    const $el = this.factorRow(factorName).find('.enroll-factor-icon');
+    const className = $el
+      .attr('class')
+      .replace('enroll-factor-icon', '')
+      .replace(/\s\s+/g, ' ');
 
-    factorRow: function (factorName) {
-      return this.el(factorName);
-    },
+    return $.trim(className);
+  },
 
-    factorDescription: function (factorName) {
-      return this.factorRow(factorName).find('.enroll-factor-description');
-    },
+  factorTitle: function(factorName) {
+    return this.factorDescription(factorName)
+      .find('h3')
+      .trimmedText();
+  },
 
-    factorIconClass: function (factorName) {
-      var $el = this.factorRow(factorName).find('.enroll-factor-icon');
-      var className = $el.attr('class').replace('enroll-factor-icon', '').replace(/\s\s+/g, ' ');
-      return $.trim(className);
-    },
+  factorSubtitle: function(factorName) {
+    return this.factorDescription(factorName)
+      .find('p')
+      .trimmedText();
+  },
 
-    factorTitle: function (factorName) {
-      return this.factorDescription(factorName).find('h3').trimmedText();
-    },
+  factorButton: function(factorName) {
+    return this.factorRow(factorName).find('.button');
+  },
 
-    factorSubtitle: function (factorName) {
-      return this.factorDescription(factorName).find('p').trimmedText();
-    },
+  isFactorMinimized: function(factorName) {
+    return this.factorRow(factorName).hasClass('enroll-factor-row-min');
+  },
 
-    factorButton: function (factorName) {
-      return this.factorRow(factorName).find('.button');
-    },
+  factorHasSuccessCheck: function(factorName) {
+    return this.factorRow(factorName).find('.success-16-green').length > 0;
+  },
 
-    isFactorMinimized: function (factorName) {
-      return this.factorRow(factorName).hasClass('enroll-factor-row-min');
-    },
+  factorHasPendingCheck: function(factorName) {
+    return this.factorRow(factorName).find('.success-16-gray').length > 0;
+  },
 
-    factorHasSuccessCheck: function (factorName) {
-      return this.factorRow(factorName).find('.success-16-green').length > 0;
-    },
+  requiredFactorList: function() {
+    return this.$('.enroll-required-factor-list');
+  },
 
-    factorHasPendingCheck: function (factorName) {
-      return this.factorRow(factorName).find('.success-16-gray').length > 0;
-    },
+  requiredFactorListTitle: function() {
+    return this.requiredFactorList()
+      .find('.list-title')
+      .trimmedText();
+  },
 
-    requiredFactorList: function () {
-      return this.$('.enroll-required-factor-list');
-    },
+  requiredFactorListSubtitle: function() {
+    return this.requiredFactorList()
+      .find('.list-subtitle')
+      .trimmedText();
+  },
 
-    requiredFactorListTitle: function () {
-      return this.requiredFactorList().find('.list-title').trimmedText();
-    },
+  enrolledFactorList: function() {
+    const lists = this.$('.enroll-factor-list');
 
-    requiredFactorListSubtitle: function () {
-      return this.requiredFactorList().find('.list-subtitle').trimmedText();
-    },
+    return lists.length === 2 ? lists.eq(0) : $();
+  },
 
-    enrolledFactorList: function () {
-      var lists = this.$('.enroll-factor-list');
-      return lists.length === 2 ? lists.eq(0) : $();
-    },
+  enrolledFactorListTitle: function() {
+    return this.enrolledFactorList()
+      .find('.list-title')
+      .trimmedText();
+  },
 
-    enrolledFactorListTitle: function () {
-      return this.enrolledFactorList().find('.list-title').trimmedText();
-    },
+  optionalFactorList: function() {
+    const lists = this.$('.enroll-factor-list').not('.enroll-required-factor-list');
 
-    optionalFactorList: function () {
-      var lists = this.$('.enroll-factor-list').not('.enroll-required-factor-list');
-      return lists.length === 2 ? lists.eq(1) : lists.eq(0);
-    },
+    return lists.length === 2 ? lists.eq(1) : lists.eq(0);
+  },
 
-    optionalFactorListTitle: function () {
-      return this.optionalFactorList().find('.list-title').trimmedText();
-    },
+  optionalFactorListTitle: function() {
+    return this.optionalFactorList()
+      .find('.list-title')
+      .trimmedText();
+  },
 
-    getFactorList: function() {
-      var factorRows = this.$('.enroll-factor-list .enroll-factor-row');
-      return _.map(factorRows, function (row) {
-        return $(row).attr('data-se');
-      });
-    }
+  getFactorList: function() {
+    const factorRows = this.$('.enroll-factor-list .enroll-factor-row');
 
-  });
-
+    return _.map(factorRows, function(row) {
+      return $(row).attr('data-se');
+    });
+  },
 });

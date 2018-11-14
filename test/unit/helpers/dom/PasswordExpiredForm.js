@@ -1,81 +1,78 @@
-define(['./Form'], function (Form) {
+import Form from './Form';
+const OLD_PASS_FIELD = 'oldPassword';
+const NEW_PASS_FIELD = 'newPassword';
+const CONFIRM_PASS_FIELD = 'confirmPassword';
+export default Form.extend({
+  oldPassField: function() {
+    return this.input(OLD_PASS_FIELD);
+  },
 
-  var OLD_PASS_FIELD = 'oldPassword';
-  var NEW_PASS_FIELD = 'newPassword';
-  var CONFIRM_PASS_FIELD = 'confirmPassword';
+  oldPassFieldError: function() {
+    return this.error(OLD_PASS_FIELD);
+  },
 
-  return Form.extend({
+  setOldPass: function(val) {
+    const field = this.oldPassField();
 
-    oldPassField: function () {
-      return this.input(OLD_PASS_FIELD);
-    },
+    field.val(val);
+    field.trigger('change');
+  },
 
-    oldPassFieldError: function () {
-      return this.error(OLD_PASS_FIELD);
-    },
+  newPassField: function() {
+    return this.input(NEW_PASS_FIELD);
+  },
 
-    setOldPass: function (val) {
-      var field = this.oldPassField();
-      field.val(val);
-      field.trigger('change');
-    },
+  newPassFieldError: function() {
+    return this.error(NEW_PASS_FIELD);
+  },
 
-    newPassField: function () {
-      return this.input(NEW_PASS_FIELD);
-    },
+  setNewPass: function(val) {
+    const field = this.newPassField();
 
-    newPassFieldError: function () {
-      return this.error(NEW_PASS_FIELD);
-    },
+    field.val(val);
+    field.trigger('change');
+  },
 
-    setNewPass: function (val) {
-      var field = this.newPassField();
-      field.val(val);
-      field.trigger('change');
-    },
+  confirmPassField: function() {
+    return this.input(CONFIRM_PASS_FIELD);
+  },
 
-    confirmPassField: function () {
-      return this.input(CONFIRM_PASS_FIELD);
-    },
+  confirmPassFieldError: function() {
+    return this.error(CONFIRM_PASS_FIELD);
+  },
 
-    confirmPassFieldError: function () {
-      return this.error(CONFIRM_PASS_FIELD);
-    },
+  setConfirmPass: function(val) {
+    const field = this.confirmPassField();
 
-    setConfirmPass: function (val) {
-      var field = this.confirmPassField();
-      field.val(val);
-      field.trigger('change');
-    },
+    field.val(val);
+    field.trigger('change');
+  },
 
-    skipLink: function () {
-      return this.el('skip-link');
-    },
+  skipLink: function() {
+    return this.el('skip-link');
+  },
 
-    skip: function () {
-      return this.skipLink().click();
-    },
+  skip: function() {
+    return this.skipLink().click();
+  },
 
-    signoutLink: function () {
-      return this.el('signout-link');
-    },
+  signoutLink: function() {
+    return this.el('signout-link');
+  },
 
-    signout: function () {
-      return this.signoutLink().click();
-    },
+  signout: function() {
+    return this.signoutLink().click();
+  },
 
-    customButton: function() {
-      return this.el('custom-button');
-    },
+  customButton: function() {
+    return this.el('custom-button');
+  },
 
-    customButtonText: function () {
-      return this.el('custom-button').trimmedText();
-    },
+  customButtonText: function() {
+    return this.el('custom-button').trimmedText();
+  },
 
-    clickCustomButton: function() {
-      this.el('custom-button').click();
-    }
-
-  });
-
+  clickCustomButton: function() {
+    this.el('custom-button').click();
+  },
 });
