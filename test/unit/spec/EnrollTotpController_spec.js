@@ -1,5 +1,4 @@
 /* eslint max-params: [2, 26] */
-import { loc } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
 import Router from 'LoginRouter';
 import Beacon from 'helpers/dom/Beacon';
@@ -22,7 +21,7 @@ import resTotpEnrollSuccess from 'helpers/xhr/MFA_ENROLL_totp_success';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import { _, $, loc } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

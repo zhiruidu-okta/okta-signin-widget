@@ -13,7 +13,7 @@ import Q from 'q';
 import $sandbox from 'sandbox';
 import CryptoUtil from 'util/CryptoUtil';
 import webauthn from 'util/webauthn';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 const testAttestationObject = 'c29tZS1yYW5kb20tYXR0ZXN0YXRpb24tb2JqZWN0';

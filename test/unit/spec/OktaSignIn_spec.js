@@ -4,7 +4,7 @@ import Logger from 'util/Logger';
 import Widget from 'widget/OktaSignIn';
 let signIn;
 const url = 'https://foo.com';
-const { $ } = Okta;
+import { $ } from 'okta';
 
 beforeEach(function() {
   spyOn(Logger, 'warn');

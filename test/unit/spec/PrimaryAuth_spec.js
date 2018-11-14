@@ -1,7 +1,6 @@
 /* eslint max-params:[2, 30], max-statements:[2, 41], camelcase:0, max-len:[2, 180] */
-import { internal } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
-import Router from 'LoginRouter';
+import LoginRouter from 'LoginRouter';
 import AuthContainer from 'helpers/dom/AuthContainer';
 import Beacon from 'helpers/dom/Beacon';
 import PrimaryAuthForm from 'helpers/dom/PrimaryAuthForm';
@@ -26,7 +25,10 @@ import DeviceFingerprint from 'util/DeviceFingerprint';
 import Errors from 'util/Errors';
 import TypingUtil from 'util/TypingUtil';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import Okta from 'okta';
+
+const { _, $, internal } = Okta;
+
 const SharedUtil = internal.util.Util;
 const itp = Expect.itp;
 const tick = Expect.tick;
@@ -72,7 +74,7 @@ function setup(settings, requests, refreshState) {
   const baseUrl = 'https://foo.com';
   const authClient = new OktaAuth({ url: baseUrl, transformErrorXHR: LoginUtil.transformErrorXHR, headers: {} });
   const successSpy = jasmine.createSpy('success');
-  const router = new Router(
+  const router = new LoginRouter(
     _.extend(
       {
         el: $sandbox,

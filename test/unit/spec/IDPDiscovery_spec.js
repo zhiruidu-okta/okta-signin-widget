@@ -1,5 +1,4 @@
 /* eslint max-params:[2, 28], max-statements:[2, 41], camelcase:0, max-len:[2, 180] */
-import { internal } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
 import Router from 'LoginRouter';
 import AuthContainer from 'helpers/dom/AuthContainer';
@@ -21,7 +20,7 @@ import BrowserFeatures from 'util/BrowserFeatures';
 import DeviceFingerprint from 'util/DeviceFingerprint';
 import Errors from 'util/Errors';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import { _, $, internal } from 'okta';
 const SharedUtil = internal.util.Util;
 const itp = Expect.itp;
 const tick = Expect.tick;

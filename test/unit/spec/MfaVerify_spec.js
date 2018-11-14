@@ -1,5 +1,4 @@
 /* eslint max-params: [2, 50], max-statements: [2, 45], camelcase: 0 */
-import { internal } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
 import Router from 'LoginRouter';
 import Duo from 'duo';
@@ -41,7 +40,7 @@ import BrowserFeatures from 'util/BrowserFeatures';
 import RouterUtil from 'util/RouterUtil';
 import LoginUtil from 'util/Util';
 import webauthn from 'util/webauthn';
-let { _, $ } = Okta;
+import { _, $, internal } from 'okta';
 const SharedUtil = internal.util.Util;
 const itp = Expect.itp;
 const tick = Expect.tick;

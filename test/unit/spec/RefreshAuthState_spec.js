@@ -9,7 +9,7 @@ import resEnroll from 'helpers/xhr/MFA_ENROLL_allFactors';
 import resSecurityImage from 'helpers/xhr/security_image';
 import Q from 'q';
 import $sandbox from 'sandbox';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

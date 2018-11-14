@@ -11,7 +11,7 @@ import resAllFactorsOnPrem from 'helpers/xhr/MFA_ENROLL_allFactors_OnPrem';
 import resRSAChangePin from 'helpers/xhr/RSA_ERROR_change_pin';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

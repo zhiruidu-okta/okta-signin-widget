@@ -14,7 +14,7 @@ import $sandbox from 'sandbox';
 import CryptoUtil from 'util/CryptoUtil';
 import LoginUtil from 'util/Util';
 import webauthn from 'util/webauthn';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 
 function createRouter(baseUrl, authClient, successSpy, settings) {

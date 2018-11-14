@@ -10,7 +10,7 @@ import resActivateDuo from 'helpers/xhr/MFA_ENROLL_ACTIVATE_duo';
 import resAllFactors from 'helpers/xhr/MFA_ENROLL_allFactors';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

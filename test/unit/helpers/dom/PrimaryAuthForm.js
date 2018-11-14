@@ -1,5 +1,5 @@
 import Form from './Form';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const USERNAME_FIELD = 'username';
 const PASSWORD_FIELD = 'password';
 const REMEMBER_ME_FIELD = 'remember';

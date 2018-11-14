@@ -8,7 +8,7 @@ import resConsentRequired from 'helpers/xhr/CONSENT_REQUIRED';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

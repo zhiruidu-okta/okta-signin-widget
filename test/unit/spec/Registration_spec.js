@@ -9,7 +9,7 @@ import resSuccess from 'helpers/xhr/SUCCESS';
 import RegSchema from 'models/RegistrationSchema';
 import $sandbox from 'sandbox';
 import Errors from 'util/Errors';
-let { _, $, Backbone } = Okta;
+import  { _, $, Backbone } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 const testData = {

@@ -1,5 +1,5 @@
 import Form from './Form';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 export default Form.extend({
   factorRow: function(factorName) {
     return this.el(factorName);

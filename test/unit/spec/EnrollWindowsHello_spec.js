@@ -12,7 +12,7 @@ import Q from 'q';
 import $sandbox from 'sandbox';
 import LoginUtil from 'util/Util';
 import webauthn from 'util/webauthn';
-const { $ } = Okta;
+import { $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

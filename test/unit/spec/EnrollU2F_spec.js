@@ -11,7 +11,7 @@ import resAllFactors from 'helpers/xhr/MFA_ENROLL_allFactors';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import Q from 'q';
 import $sandbox from 'sandbox';
-let { $ } = Okta;
+import { $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

@@ -1,7 +1,6 @@
 /* eslint max-params: [2, 32], max-statements: 0, max-len: [2, 180], camelcase:0 */
-import { Router, internal } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
-import Router from 'LoginRouter';
+import LoginRouter from 'LoginRouter';
 import EnrollCallForm from 'helpers/dom/EnrollCallForm';
 import IDPDiscoveryForm from 'helpers/dom/IDPDiscoveryForm';
 import MfaVerifyForm from 'helpers/dom/MfaVerifyForm';
@@ -27,9 +26,10 @@ import $sandbox from 'sandbox';
 import BrowserFeatures from 'util/BrowserFeatures';
 import Errors from 'util/Errors';
 import Logger from 'util/Logger';
+import  { _, $, Backbone, internal, Router } from 'okta';
+
 const SharedUtil = internal.util.Util;
 const CourageLogger = internal.util.Logger;
-let { _, $, Backbone } = Okta;
 const itp = Expect.itp;
 const tick = Expect.tick;
 const OIDC_IFRAME_ID = 'okta-oauth-helper-frame';
@@ -61,7 +61,7 @@ Expect.describe('LoginRouter', function() {
     const baseUrl = 'https://foo.com';
     const authClient = new OktaAuth({ url: baseUrl, headers: {} });
     const eventSpy = jasmine.createSpy('eventSpy');
-    const router = new Router(
+    const router = new LoginRouter(
       _.extend(
         {
           el: $sandbox,

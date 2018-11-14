@@ -9,7 +9,7 @@ import Expect from 'helpers/util/Expect';
 import resRecovery from 'helpers/xhr/RECOVERY';
 import resSecurityImage from 'helpers/xhr/security_image';
 import $sandbox from 'sandbox';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

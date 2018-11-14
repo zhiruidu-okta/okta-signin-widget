@@ -1,5 +1,5 @@
 import Dom from './Dom';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 export default Dom.extend({
   beacon: function() {
     let beacon = this.securityBeacon();

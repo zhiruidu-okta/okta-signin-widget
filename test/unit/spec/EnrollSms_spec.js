@@ -15,7 +15,7 @@ import resExistingPhone from 'helpers/xhr/MFA_ENROLL_smsFactor_existingPhone';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

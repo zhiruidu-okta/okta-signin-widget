@@ -9,7 +9,7 @@ import resEnrollError from 'helpers/xhr/MFA_ENROLL_ACTIVATE_error';
 import resAllFactors from 'helpers/xhr/MFA_ENROLL_allFactors';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
-const { $ } = Okta;
+import { $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 

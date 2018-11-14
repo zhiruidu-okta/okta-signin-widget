@@ -1,8 +1,7 @@
 /* eslint no-global-assign: 0, max-statements: 0 */
-import { internal } from 'okta';
 import Duo from 'duo';
 import Q from 'q';
-let { _, $, Backbone } = Okta;
+import  { _, $, Backbone, internal } from 'okta';
 let { Cookie } = internal.util;
 const fn = {};
 

@@ -1,5 +1,4 @@
 /* eslint max-params: [2, 19], max-statements: [2, 22] */
-import { internal } from 'okta';
 import OktaAuth from '@okta/okta-auth-js/jquery';
 import Router from 'LoginRouter';
 import Beacon from 'helpers/dom/Beacon';
@@ -15,7 +14,7 @@ import resPassWarn from 'helpers/xhr/PASSWORD_WARN';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import $sandbox from 'sandbox';
 import LoginUtil from 'util/Util';
-let { _, $ } = Okta;
+import { _, $, internal } from 'okta';
 const SharedUtil = internal.util.Util;
 const itp = Expect.itp;
 const tick = Expect.tick;

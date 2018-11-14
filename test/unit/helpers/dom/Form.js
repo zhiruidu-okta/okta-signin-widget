@@ -1,5 +1,5 @@
 import Dom from './Dom';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 export default Dom.extend({
   titleText: function() {
     return this.el('o-form-head').trimmedText();

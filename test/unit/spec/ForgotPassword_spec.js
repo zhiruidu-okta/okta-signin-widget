@@ -14,7 +14,7 @@ import resError from 'helpers/xhr/RECOVERY_error';
 import resSuccess from 'helpers/xhr/SUCCESS';
 import Q from 'q';
 import $sandbox from 'sandbox';
-const { _, $ } = Okta;
+import { _, $ } from 'okta';
 const itp = Expect.itp;
 const tick = Expect.tick;
 
