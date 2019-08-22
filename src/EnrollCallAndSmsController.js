@@ -107,7 +107,13 @@ function (Okta, FormController, Footer, PhoneTextBox, TextBox, CountryUtil, Form
         self.trigger('errors:clear');
 
         if(!phoneNumber.length) {
-          self.trigger('invalid', self, {'phoneNumber': 'model.validation.field.blank'});
+          _.delay(
+            function () {
+              self.trigger('form:clear-error:phoneNumber');
+              self.trigger('invalid', self, {'phoneNumber': 'model.validation.field.blank'});
+            }.bind(this),
+            200
+          );
           return;
         }
 
@@ -288,7 +294,7 @@ function (Okta, FormController, Footer, PhoneTextBox, TextBox, CountryUtil, Form
           this.clearWarnings();
           this.add(warningTemplate, '.o-form-error-container', {options: {warning: msg}});
         },
-        
+
         clearWarnings: function () {
           this.$('.okta-form-infobox-warning').remove();
         },
