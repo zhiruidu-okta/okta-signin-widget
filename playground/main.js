@@ -3,7 +3,20 @@
 
 import { widgetOptions as signinWidgetOptions} from '../.widgetrc';
 
-const signIn = new OktaSignIn(signinWidgetOptions);
+const opt = Object.assign({
+
+  transformUsername(x){
+    console.log('transformUsername');
+    return x;
+  },
+  processCreds(x){
+    console.log('processCreds');
+    return x;
+  },
+},
+signinWidgetOptions
+);
+const signIn = new OktaSignIn(opt);
 
 signIn.renderEl(
   { el: '#okta-login-container' },
