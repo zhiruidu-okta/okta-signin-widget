@@ -3,17 +3,18 @@ import DeviceChallengePollPageObject from '../framework/page-objects/DeviceChall
 import identifyWithDeviceProbingLoopback from '../../../playground/mocks/idp/idx/data/identify-with-device-probing-loopback';
 import loopbackChallengeNotReceived from '../../../playground/mocks/idp/idx/data/identify-with-device-probing-loopback-challenge-not-received';
 
-const logger = RequestLogger([
-  'http://localhost:3000/idp/idx/introspect',
-  'https://localhost:3000/probe2000',
-  'https://localhost:3000/probe6511',
-  'https://localhost:3000/probe6512',
-  'https://localhost:3000/probe6513',
-  'https://localhost:3000/challenge2000',
-  'https://localhost:3000/challenge6511',
-  'https://localhost:3000/challenge6512',
-  'https://localhost:3000/challenge6513',
-]);
+const logger = RequestLogger(/localhost/);
+  //[
+ // 'http://localhost:3000/idp/idx/introspect',
+//   'https://localhost:3000/probe2000',
+//   'https://localhost:3000/probe6511',
+//   'https://localhost:3000/probe6512',
+//   'https://localhost:3000/probe6513',
+//   'https://localhost:3000/challenge2000',
+//   'https://localhost:3000/challenge6511',
+//   'https://localhost:3000/challenge6512',
+//   'https://localhost:3000/challenge6513',
+// ]);
 
 let failureCount = 0;
 const mock = RequestMock()
@@ -28,17 +29,21 @@ const mock = RequestMock()
       res.setBody(identifyWithDeviceProbingLoopback);
     }
   })
-  .onRequestTo('https://localhost:3000/probe2000')
+  .onRequestTo('http://localhost:2000/probe')
   .respond(null, 500, { 'access-control-allow-origin': '*' })
-  .onRequestTo('https://localhost:3000/probe6511')
+  .onRequestTo('http://localhost:6511/probe')
   .respond(null, 500, { 'access-control-allow-origin': '*' })
-  .onRequestTo('https://localhost:3000/probe6512')
+  .onRequestTo('http://localhost:6512/probe')
   .respond(null, 200, { 'access-control-allow-origin': '*' })
-  .onRequestTo('https://localhost:3000/challenge6512')
-  .respond(null, 200, { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'Origin, X-Requested-With, Content-Type, Accept', 'access-control-allow-methods': 'POST, OPTIONS' })
+  .onRequestTo('http://localhost:6512/challenge')
+      .respond(null, 200, {
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        'access-control-allow-methods': 'POST, OPTIONS'
+      });
 
 fixture(`Device Challenge Polling View`)
-  .requestHooks(logger, mock)
+  .requestHooks(logger, mock);
 
 async function setup(t) {
   const deviceChallengePollPage = new DeviceChallengePollPageObject(t);
@@ -54,4 +59,4 @@ test
     await t.expect(logger.count(record => record.response.statusCode === 500)).eql(2);
     const form =new Selector('.o-form').nth(0);
     await t.expect(form.find('input[name="identifier"]').exists).eql(true);
-  })
+  });

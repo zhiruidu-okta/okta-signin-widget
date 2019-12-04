@@ -54,10 +54,10 @@ const Body = BaseForm.extend({
       // To use the mock server by running `yarn authenticator`
       // return `http://localhost:4000/${path}?authenticator=${currentPort}`;
 
-      if (authenticatorDomainUrl === 'localhost:3000') {
+      //if (authenticatorDomainUrl === 'localhost:3000') {
         // for testing
-        return `https://${authenticatorDomainUrl}/${path}${currentPort}`;
-      }
+        //return `https://${authenticatorDomainUrl}/${path}${currentPort}`;
+      //}
 
       return `http://${authenticatorDomainUrl}:${currentPort}/${path}`;
     };
@@ -79,17 +79,19 @@ const Body = BaseForm.extend({
         .fail(onFailure);
     };
 
+    console.log('start probe');
     let probeChain = Promise.resolve();
     ports.forEach(port => {
       probeChain = probeChain
         .then(() => {
+          console.log('ping port:', port);
           if (!foundPort) {
             currentPort = port;
             return doProbing();
           }
         })
         .catch(() => {
-          // console.log('Something unexpected happened during device probing.', 'error');
+          console.log('Something unexpected happened during device probing.', 'error');
         });
     });
   },
