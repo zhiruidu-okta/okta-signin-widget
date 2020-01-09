@@ -22,15 +22,21 @@ module.exports = {
 
     // ===== AUTHN
     '/api/v1/authn': [
-      'consent-required',
+      // 'consent-required',
       // 'success-001'
+      'enroll-email-with-sms-enrolled'
     ],
-
+    '/api/v1/authn/factors': [
+      'enroll-activate-email'
+    ],
+    '/api/v1/authn/factors/:factorid/lifecycle/activate': [
+      'success-001'
+    ],
   },
 };
 
 // ===== IDX
-// Windows authenticator with loopback server 
+// Windows authenticator with loopback server
 // module.exports = {
 //   mocks: {
 //     '/idp/idx/introspect': [
