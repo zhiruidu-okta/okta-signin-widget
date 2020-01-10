@@ -25,12 +25,15 @@ function (Okta, FormController, Footer, FormType) {
     },
 
     resend: function () {
+      this.trigger('form:clear-errors');
       return this.doTransaction(function (transaction) {
-        return transaction.resend();
+        // authn support multiple `resend` hence has to specify name.
+        return transaction.resend('email');
       });
     },
 
     save: function () {
+      this.trigger('save');
       const formData = this.toJSON();
       return this.doTransaction(function (transaction) {
         return transaction.activate(formData);
@@ -44,10 +47,16 @@ function (Okta, FormController, Footer, FormType) {
       noButtonBar: false,
       autoSave: true,
       save: _.partial(Okta.loc, 'mfa.challenge.verify', 'login'),
+      hasSavingState: true,
       formChildren: [
+        // message
         FormType.View({
           View: Okta.View.extend({
-            template: 'A verification code was sent to {{factorEmail}}. Check your email and enter the code below.',
+            attributes: {
+              'data-se': 'enroll-activate-email-content',
+            },
+            template: 'A verification code was sent to <span class="mask-email">{{factorEmail}}</span>. ' +
+              'Check your email and enter the code below.',
 
             getTemplateData: function () {
               const factor = this.options.appState.get('factor');
@@ -59,12 +68,28 @@ function (Okta, FormController, Footer, FormType) {
 
           })
         }),
+        // passcode input
         FormType.Input({
           label: 'Verification code',
           'label-top': true,
-          name: 'passcode',
+          name: 'passCode',
           type: 'text',
           wide: true,
+        }),
+        // send again link button
+        FormType.View({
+          View: Okta.View.extend({
+            template: '<a href="#" class="email-activate-send-again-btn">send again</a>',
+            events: {
+              'click .email-activate-send-again-btn': 'resendEmail',
+            },
+            resendEmail: function (e) {
+              e.preventDefault();
+              this.model.resend();
+            },
+            initialize: function () {
+            },
+          })
         }),
       ]
     };

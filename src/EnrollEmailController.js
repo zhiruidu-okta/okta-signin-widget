@@ -25,6 +25,7 @@ function (Okta, FormController, Footer, FormType) {
       provider: 'string',
     },
     save: function () {
+      this.trigger('save');
       const factorOpt = this.pick('factorType', 'provider');
       return this.doTransaction(function (transaction) {
         var factor = _.findWhere(transaction.factors, factorOpt);
@@ -43,6 +44,9 @@ function (Okta, FormController, Footer, FormType) {
       formChildren: [
         FormType.View({
           View: Okta.View.extend({
+            attributes: {
+              'data-se': 'enroll-email-content'
+            },
             template: 'Send a verification code to start enrollment.'
           })
         }),
