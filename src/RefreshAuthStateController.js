@@ -27,10 +27,12 @@ define(['q', 'okta', 'util/FormController'], function (Q, Okta, FormController) 
       var token = this.options.token;
       this.model.startTransaction(function (authClient) {
         appState.trigger('loading', true);
-        if (token && (token === this.settings.get('stateToken'))) {
-          // widget bootstrapped with statetoken via settings
-          // check if stateToken in url is same as settings
-          //unset stateToken to prevent the baseloginrouter controller from calling it again on render
+        if (token && (token === this.settings.get('stateToken') ||
+          this.options.appState.get('introspectSuccess'))) {
+          // if widget is bootstrapped with statetoken via settings
+          // check if stateToken in url/options is same as settings
+          // unset stateToken to prevent the baseloginrouter controller from calling it again on render
+          // OR if introspectSuccess is set and token is present, it means we hit introspect and are on the oldpipeline
           this.settings.unset('stateToken');
           var trans = this.options.appState.get('introspectSuccess');
           var transError = this.options.appState.get('introspectError');

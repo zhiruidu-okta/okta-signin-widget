@@ -711,7 +711,7 @@ function (Okta, Q, Logger, Errors, BrowserFeatures, WidgetUtil, Bundles, config,
           return Expect.waitForRecoveryQuestion();
         })
         .then(function () {
-          expect($.ajax.calls.count()).toBe(2);
+          expect($.ajax.calls.count()).toBe(1);
           Expect.isJsonPost($.ajax.calls.argsFor(0), {
             url: 'https://foo.com/idp/idx/introspect',
             data: {
@@ -731,7 +731,7 @@ function (Okta, Q, Logger, Errors, BrowserFeatures, WidgetUtil, Bundles, config,
           return Expect.waitForRecoveryQuestion();
         })
         .then(function () {
-          expect($.ajax.calls.count()).toBe(2);
+          expect($.ajax.calls.count()).toBe(1);
           Expect.isJsonPost($.ajax.calls.argsFor(0), {
             url: 'https://foo.com/idp/idx/introspect',
             data: {
@@ -808,7 +808,7 @@ function (Okta, Q, Logger, Errors, BrowserFeatures, WidgetUtil, Bundles, config,
           return Expect.waitForPrimaryAuth(test);
         })
         .then(function (test) {
-          expect($.ajax.calls.count()).toBe(2);
+          expect($.ajax.calls.count()).toBe(1);
           Expect.isJsonPost($.ajax.calls.argsFor(0), {
             url: 'https://foo.com/idp/idx/introspect',
             data: {
@@ -829,7 +829,7 @@ function (Okta, Q, Logger, Errors, BrowserFeatures, WidgetUtil, Bundles, config,
           return Expect.waitForIDPDiscovery(test);
         })
         .then(function (test) {
-          expect($.ajax.calls.count()).toBe(2);
+          expect($.ajax.calls.count()).toBe(1);
           Expect.isJsonPost($.ajax.calls.argsFor(0), {
             url: 'https://foo.com/idp/idx/introspect',
             data: {
